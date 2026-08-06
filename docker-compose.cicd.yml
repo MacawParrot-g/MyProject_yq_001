@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: cicd-mysql  # ✅ 修改容器名，避免与生产冲突
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345678
+      MYSQL_DATABASE: test_data
+      TZ: Asia/Shanghai
+    # ❌ 移除端口映射，仅验证部署流程
+    # ports:
+    #   - "3306:3306"
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/initsql:/docker-entrypoint-initdb.d
+    networks:
+      - cicd-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p12345678"] # ✅ 修正密码，与环境变量一致
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: cicd-redis
+    restart: always
+    command: redis-server --appendonly yes
+    # ports:
+    #   - "6379:6379"
+    volumes:
+      - ./redis/data:/data
+    networks:
+      - cicd-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cicd-backend
+    restart: always
+    # ports:
+    #   - "8080:8080"
+    volumes:
+      - ./data/export:/data/export
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/test_data?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: remote_user
+      SPRING_DATASOURCE_PASSWORD: 12345678
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - cicd-network
+
+  nginx:
+    image: nginx:1.21-alpine
+    container_name: cicd-nginx
+    restart: always
+    # ports:
+    #   - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/html:/usr/share/nginx/html
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - backend
+    networks:
+      - cicd-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: cicd-rabbitmq
+    restart: always
+    # ports:
+    #   - "5672:5672"
+    #   - "15672:15672"
+    volumes:
+      - ./data:/var/lib/rabbitmq
+      - ./conf:/etc/rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: 91781369
+      RABBITMQ_DEFAULT_VHOST: /
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - cicd-network
+
+networks:
+  cicd-network:
+    driver: bridge
