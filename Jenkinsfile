@@ -63,29 +63,17 @@ pipeline {
             }
         }
 
-        stage('5. 部署服务 (本机)') {
-            steps {
-                echo '🛠️ 正在本机部署服务...'
-                script {
-                    // 登录以便拉取刚才推送的镜像（或者直接使用本地构建的镜像）
-                    docker.withRegistry('https://registry.hub.docker.com', DOCKER_CREDENTIALS_ID) {
-                        sh '''
-                            # 停止并删除旧容器
-                            docker compose down || true
-                            
-                            # 拉取最新镜像 (如果是本机构建其实可以省略 pull，但为了保险建议加上)
-                            docker compose pull
-                            
-                            # 启动服务
-                            docker compose up -d --build
-                            
-                            # 打印状态
-                            docker compose ps
-                        '''
-                    }
-                }
-            }
-        }
+        stage('5. 本地部署（沙箱环境）') {
+    steps {
+        sh """
+            mkdir -p ${DEPLOY_DIR}
+            cp docker-compose.cicd.yml ${DEPLOY_DIR}/docker-compose.yml
+            cd ${DEPLOY_DIR}
+            docker-compose up -d
+            echo '✅ 部署完成！服务已在沙箱环境启动，未暴露端口。'
+        """
+    }
+}
     }
 
     post {
