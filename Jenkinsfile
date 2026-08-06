@@ -38,9 +38,6 @@ pipeline {
         stage('3. 构建前端/Nginx镜像') {
             steps {
                 echo '正在构建前端 (Nginx)...'
-                dir('nginx') {
-                    sh "docker build -t ${FRONTEND_IMAGE} ."
-                }
             }
         }
 
