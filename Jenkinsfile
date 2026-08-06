@@ -52,18 +52,18 @@ pipeline {
         //     }
         // }
 
-        stage('4. 推送镜像到 Docker Hub') {
-    steps {
-        echo '正在推送镜像到 Docker Hub...'
-        // 建议使用不同的变量名，避免与环境变量混淆
-        withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
-            // 使用 --password-stdin 更安全，防止密码在进程列表中泄露
-            sh "echo ${DH_PASS} | docker login -u ${DH_USER} --password-stdin"
-            sh "docker push ${BACKEND_IMAGE}"
-            sh "docker push ${FRONTEND_IMAGE}"
-        }
-    }
-}
+//         stage('4. 推送镜像到 Docker Hub') {
+//     steps {
+//         echo '正在推送镜像到 Docker Hub...'
+//         // 建议使用不同的变量名，避免与环境变量混淆
+//         withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DH_USER', passwordVariable: 'DH_PASS')]) {
+//             // 使用 --password-stdin 更安全，防止密码在进程列表中泄露
+//             sh "echo ${DH_PASS} | docker login -u ${DH_USER} --password-stdin"
+//             sh "docker push ${BACKEND_IMAGE}"
+//             sh "docker push ${FRONTEND_IMAGE}"
+//         }
+//     }
+// }
 
         stage('5. 本地部署（沙箱环境）') {
             steps {
