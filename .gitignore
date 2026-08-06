@@ -1,1 +1,24 @@
+# === 后端构建产物 ===
+backend/target/
+backend/*.jar
+backend/*.war
 
+# === 前端构建产物 ===
+nginx/html/dist/
+
+# === 数据库与缓存数据目录（不要提交） ===
+mysql/data/
+redis/data/
+data/export/
+
+# === IDE 与系统文件 ===
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# === 日志与临时文件 ===
+*.log
+tmp/
+temp/
