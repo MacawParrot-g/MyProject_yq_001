@@ -3,22 +3,23 @@ version: '3.8'
 services:
   mysql:
     image: mysql:8.0
-    container_name: cicd-mysql  # ✅ 修改容器名，避免与生产冲突
+    container_name: cicd-mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: 12345678
       MYSQL_DATABASE: test_data
+      # 【修复1】显式创建后端需要的用户，防止连接被拒
+      MYSQL_USER: remote_user
+      MYSQL_PASSWORD: 12345678
       TZ: Asia/Shanghai
-    # ❌ 移除端口映射，仅验证部署流程
-    # ports:
-    #   - "3306:3306"
     volumes:
-      - ./mysql/data:/var/lib/mysql
+      # 【优化】使用独立目录，防止与生产环境数据权限冲突
+      - ./cicd-data/mysql:/var/lib/mysql
       - ./mysql/initsql:/docker-entrypoint-initdb.d
     networks:
       - cicd-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p12345678"] # ✅ 修正密码，与环境变量一致
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p12345678"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,10 +29,8 @@ services:
     container_name: cicd-redis
     restart: always
     command: redis-server --appendonly yes
-    # ports:
-    #   - "6379:6379"
     volumes:
-      - ./redis/data:/data
+      - ./cicd-data/redis:/data
     networks:
       - cicd-network
     healthcheck:
@@ -40,18 +39,36 @@ services:
       timeout: 5s
       retries: 5
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: cicd-rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: 91781369
+      RABBITMQ_DEFAULT_VHOST: /
+    volumes:
+      - ./cicd-data/rabbitmq:/var/lib/rabbitmq
+    networks:
+      - cicd-network
+    # 【修复2】补全健康检查，否则后端 depends_on 会失效
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: cicd-backend
     restart: always
-    # ports:
-    #   - "8080:8080"
     volumes:
-      - ./data/export:/data/export
+      - ./cicd-data/export:/data/export
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      # 注意：这里的主机名必须是服务名 'mysql'，不能用 localhost
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/test_data?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: remote_user
       SPRING_DATASOURCE_PASSWORD: 12345678
@@ -71,36 +88,12 @@ services:
     image: nginx:1.21-alpine
     container_name: cicd-nginx
     restart: always
-    # ports:
-    #   - "80:80"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
       - ./nginx/html:/usr/share/nginx/html
-      - ./nginx/logs:/var/log/nginx
+      - ./cicd-data/nginx-logs:/var/log/nginx
     depends_on:
       - backend
-    networks:
-      - cicd-network
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: cicd-rabbitmq
-    restart: always
-    # ports:
-    #   - "5672:5672"
-    #   - "15672:15672"
-    volumes:
-      - ./data:/var/lib/rabbitmq
-      - ./conf:/etc/rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: 91781369
-      RABBITMQ_DEFAULT_VHOST: /
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
     networks:
       - cicd-network
 
