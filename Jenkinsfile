@@ -20,8 +20,17 @@ pipeline {
             steps {
                 echo '正在构建后端 (Backend)...'
                 dir('backend') {
+                    // 【修复1】增加调试命令，确认 JAR 包是否生成及名称是否正确
                     sh 'mvn clean package -DskipTests'
-                    sh "docker build -t ${BACKEND_IMAGE} ."
+                    sh 'ls -la target/*.jar'
+                    // 【修复2】增加容错判断，避免 JAR 包不存在时继续执行 docker build
+                    sh '''
+                        if [ ! -f target/Automatic_test_script-1.0-SNAPSHOT.jar ]; then
+                            echo "❌ JAR包不存在，请检查 pom.xml 的 finalName 配置"
+                            exit 1
+                        fi
+                        docker build -t ${BACKEND_IMAGE} .
+                    '''
                 }
             }
         }
@@ -52,7 +61,8 @@ pipeline {
                     mkdir -p ${DEPLOY_DIR}
                     cp docker-compose.cicd.yml ${DEPLOY_DIR}/docker-compose.yml
                     cd ${DEPLOY_DIR}
-                    sh 'docker compose -f docker compose.cicd.yml -p cicd-test up -d --build'
+                    # 【修复3】修正语法错误：移除嵌套 sh，修正文件名拼写
+                    docker compose -f docker-compose.cicd.yml -p cicd-test up -d --build
                     echo '部署完成！服务已在沙箱环境启动，未暴露端口。'
                 """
             }
