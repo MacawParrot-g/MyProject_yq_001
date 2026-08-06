@@ -52,7 +52,7 @@ pipeline {
                     mkdir -p ${DEPLOY_DIR}
                     cp docker-compose.cicd.yml ${DEPLOY_DIR}/docker-compose.yml
                     cd ${DEPLOY_DIR}
-                    docker compose -f docker compose.cicd.yml -p myproject-test up -d --build'
+                    sh 'docker compose -f docker compose.cicd.yml -p cicd-test up -d --build'
                     echo '部署完成！服务已在沙箱环境启动，未暴露端口。'
                 """
             }
