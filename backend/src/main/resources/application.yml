@@ -1,1 +1,105 @@
+spring:
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: admin
+    password: 91781369
+    virtual-host: /
+    connection-timeout: 3000ms
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
+        concurrency: 3
+        max-concurrency: 8
+        missing-queues-fatal: false
+        retry:
+          enabled: false
+          max-attempts: 1
+          initial-interval: 2000ms
+  data:
+    redis:
+      host: redis
+      port: 6379
+      database: 1
+      timeout: 3000ms
+  datasource:
+    url: jdbc:mysql://mysql:3306/test_data?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&autoReconnect=true&failOverReadOnly=false
+    username: remote_user
+    password: 12345678
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+      connection-test-query: SELECT 1
+      auto-commit: true
+      pool-name: HikariPool-1
+      register-mbeans: true
+      keepalive-time: 300000
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+server:
+  port: 8080
+  shutdown: graceful
+  servlet:
+    session:
+      timeout: 1800s
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 20
+    accept-count: 100
+    max-connections: 8192
+    connection-timeout: 20000
+    keep-alive-timeout: 60000
+    max-keep-alive-requests: 200
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  health:
+    rabbit:
+      enabled: true
+    redis:
+      enabled: true
+    db:
+      enabled: true
+
+logging:
+  level:
+    root: INFO
+    org.example: INFO
+    org.springframework.amqp: WARN
+    com.zaxxer.hikari: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{username}] %-5level %logger{36} - %msg%n"
+  file:
+    name: /data/logs/app.log
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 30
+      total-size-cap: 3GB
+
+export:
+  file-dir: /data/export
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
 
