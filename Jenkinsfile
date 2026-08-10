@@ -35,22 +35,13 @@ pipeline {
             }
         }
 
-        stage('3. 准备前端/Nginx镜像') {
-            steps {
-                echo '检测到前端已预构建，准备构建 Nginx 镜像...'
-                dir('nginx') {
-                    // 验证 dist 目录是否存在
-                    sh 'ls -la html/dist'
-                    
-                    sh """
-                        # 基于 nginx/html/Dockerfile 构建镜像
-                        # 确保 Dockerfile 里的 COPY 路径是相对于 nginx 目录的
-                        docker build -t ${FRONTEND_IMAGE} .
-                        echo "前端镜像构建完成: ${FRONTEND_IMAGE}"
-                    """
-                }
-            }
-        }
+        stage('3. 标记前端镜像') {
+    steps {
+        echo '前端使用官方 Nginx 基础镜像，无需本地构建...'
+        // 拉取一个干净的 nginx 镜像并打上你的标签，供 compose 使用
+        sh 'docker pull nginx:alpine && docker tag nginx:alpine macawparrot/myapp-frontend:latest'
+    }
+}
 
         stage('4. 推送镜像到 Docker Hub') {
             steps {
