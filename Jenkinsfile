@@ -19,21 +19,27 @@ pipeline {
         }
 
         stage('2. 构建后端镜像') {
-            steps {
-                echo '正在构建后端 (Backend)...'
-                dir('backend') {
-                    sh 'mvn clean package -DskipTests'
-                    
-                    // 检查 JAR 包是否存在
-                    sh "ls -la target/${JAR_NAME}"
-                    
-                    sh """
-                        docker build -t ${BACKEND_IMAGE} .
-                        echo "后端镜像构建完成: ${BACKEND_IMAGE}"
-                    """
-                }
-            }
+    steps {
+        dir('backend') {
+            // 1. 强制清理本地仓库缓存中的当前项目快照
+            sh 'mvn dependency:purge-local-repository -DmanualInclude=org.example:Automatic_test_script || true'
+
+            // 2. 重新构建
+            sh 'mvn clean package -DskipTests -U' // -U 强制更新快照
+
+            // 3. 【关键】验证 JAR 包内容
+            sh '''
+                echo ">>> 检查 JAR 包大小 <<<"
+                ls -lh target/Automatic_test_script-1.0-SNAPSHOT.jar
+
+                echo ">>> 检查 Main 类是否存在 <<<"
+                jar tf target/Automatic_test_script-1.0-SNAPSHOT.jar | grep "org/example/Main.class" || echo "ERROR: Main class NOT found!"
+            '''
+
+            sh "docker build -t ${BACKEND_IMAGE} ."
         }
+    }
+}
 
         stage('3. 标记前端镜像') {
     steps {
