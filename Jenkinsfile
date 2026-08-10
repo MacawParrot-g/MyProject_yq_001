@@ -59,34 +59,19 @@ pipeline {
 
         stage('5. 本地部署（沙箱环境）') {
     steps {
-        echo "正在部署到 ${DEPLOY_DIR}..."
-        sh """
-            # 1. 创建部署目录
-            mkdir -p ${DEPLOY_DIR}
-            
-            # 2. 【修改点】使用 cp 替代 rsync
-            # -r: 递归复制目录
-            # --exclude: 排除 .git 文件夹
-            # 注意：cp 的 exclude 语法和 rsync 不同，这里用 find + cp 或者简单的 cp -r 后删除
-            # 最简单的做法是直接复制，因为 .git 在容器里也不大，或者用 tar 过滤
-            
-            # 方法 A：直接复制（如果 .git 不大，推荐这个，最快）
-            cp -r ./ ${DEPLOY_DIR}/
-            
-            # 方法 B：如果你非常介意 .git 目录，可以用 tar 管道过滤（更专业）
-            # tar --exclude='.git' -c . | tar -x -C ${DEPLOY_DIR}/
+        sh '''
+            # 1. 清理宿主机上的旧构建产物
+            rm -rf /opt/cicd-sandbox/backend/target
+            rm -rf /opt/cicd-sandbox/backend/Dockerfile # 可选，确保完全干净
 
-            # 3. 进入部署目录并启动
-            cd ${DEPLOY_DIR}
-            
-            # 停止旧容器
-            docker compose -f docker-compose.cicd.yml down || true
-            
-            # 启动新容器
-            docker compose -f docker-compose.cicd.yml up -d
-            
-            echo "部署完成！"
-        """
+            # 2. 复制新代码
+            cp -r ./ /opt/cicd-sandbox/
+
+            # 3. 进入目录并部署
+            cd /opt/cicd-sandbox
+            docker compose -f docker-compose.cicd.yml down
+            docker compose -f docker-compose.cicd.yml up -d --build # 强制重新构建
+        '''
     }
 }
     }
