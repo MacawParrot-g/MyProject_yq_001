@@ -43,19 +43,19 @@ pipeline {
     }
 }
 
-        stage('4. 推送镜像到 Docker Hub') {
-            steps {
-                echo '正在推送镜像...'
-                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh """
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push ${BACKEND_IMAGE}
-                        docker push ${FRONTEND_IMAGE}
-                        docker logout
-                    """
-                }
-            }
-        }
+        // stage('4. 推送镜像到 Docker Hub') {
+        //     steps {
+        //         echo '正在推送镜像...'
+        //         withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+        //             sh """
+        //                 echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+        //                 docker push ${BACKEND_IMAGE}
+        //                 docker push ${FRONTEND_IMAGE}
+        //                 docker logout
+        //             """
+        //         }
+        //     }
+        // }
 
         stage('5. 本地部署（沙箱环境）') {
             steps {
