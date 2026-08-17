@@ -30,7 +30,7 @@ services:
     restart: always
     command: redis-server --appendonly yes --port 6380
     ports:
-      - "16380:6380"    # 宿主机 16380 → 容器内 6380（非默认端口）
+      - "16379:6379"    # 宿主机 16380 → 容器内 6380（非默认端口）
     volumes:
       - ./cicd-data/redis:/data
     networks:
