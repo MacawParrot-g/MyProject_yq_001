@@ -12,7 +12,7 @@ services:
       MYSQL_PASSWORD: 12345678
       TZ: Asia/Shanghai
     ports:
-      - "13306:3306"    # 宿主机 13306 → 容器内 3306（非默认端口）
+      - "13306:3305"    # 宿主机 13306 → 容器内 3305（非默认端口）
     volumes:
       - ./cicd-data/mysql:/var/lib/mysql
       - ./mysql/initsql:/docker-entrypoint-initdb.d
@@ -30,7 +30,7 @@ services:
     restart: always
     command: redis-server --appendonly yes --port 6380
     ports:
-      - "16379:6379"    # 宿主机 16380 → 容器内 6380（非默认端口）
+      - "16379:6380"    # 宿主机 16380 → 容器内 6380（非默认端口）
     volumes:
       - ./cicd-data/redis:/data
     networks:
@@ -69,8 +69,8 @@ services:
       - ./cicd-data/export:/data/export
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      # MySQL：容器内仍用 3306，通过服务名 'mysql' 访问
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/test_data?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      # MySQL：容器内仍用 3305，通过服务名 'mysql' 访问
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3305/test_data?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: remote_user
       SPRING_DATASOURCE_PASSWORD: 12345678
       # Redis：容器内改为 6380，通过服务名 'redis' 访问
