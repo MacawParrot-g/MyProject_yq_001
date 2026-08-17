@@ -22,11 +22,11 @@ spring:
   data:
     redis:
       host: redis
-      port: 6379
+      port: 6380
       database: 1
       timeout: 3000ms
   datasource:
-    url: jdbc:mysql://mysql:3306/test_data?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&autoReconnect=true&failOverReadOnly=false
+    url: jdbc:mysql://mysql:3305/test_data?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&autoReconnect=true&failOverReadOnly=false
     username: remote_user
     password: 12345678
     driver-class-name: com.mysql.cj.jdbc.Driver
