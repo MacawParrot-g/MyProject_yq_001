@@ -16,6 +16,7 @@ services:
     volumes:
       - ./cicd-data/mysql:/var/lib/mysql
       - ./mysql/initsql:/docker-entrypoint-initdb.d
+      - ./mysql/conf/my.cnf:/etc/mysql/conf.d/my.cnf
     networks:
       - cicd-network
     healthcheck:
