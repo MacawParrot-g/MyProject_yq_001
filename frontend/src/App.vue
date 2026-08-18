@@ -1,7 +1,11 @@
 <template>
   <div class="app-wrapper" v-if="loggedIn">
-    <h1>"我看行"游戏测试数据可视化&自动入库系统</h1>
+    <h1>"我看行"游戏测试数据可视化&自动入库系统(CI/CD构建版)</h1>
     <div class="subtitle">由深圳市慧动创想科技有限公司--蓝黄金刚鹦鹉开发</div>
+
+    <div class="guide-trigger-bar">
+      <span class="guide-trigger-link" @click="showGuide = true">新人指南</span>
+    </div>
 
     <div class="tab-switcher">
       <button v-for="tab in tabs" :key="tab.key" class="tab-btn" :class="{ active: mode === tab.key }" @click="switchMode(tab.key)">
@@ -14,7 +18,7 @@
       <component :is="currentComponent" @error="setError" />
     </keep-alive>
   </div>
-
+  <NewbieGuide v-if="showGuide" @close="showGuide = false" />
   <div class="login-overlay" v-if="!loggedIn">
     <div class="login-card">
       <h1>我看行"游戏测试数据可视化&自动入库系统3.0</h1>
@@ -35,12 +39,13 @@ import ManualMode from './components/ManualMode.vue'
 import ExportMode from './components/ExportMode.vue'
 import DataVisitable from "./components/DataVisitable.vue";
 import QRCodeBuilderByMan from "./components/QRCodeBuilderByMan.vue";
-
+import NewbieGuide from "./components/NewbieGuide.vue";
 
 const mode = ref('auto')
 const errorMsg = ref('')
 const loggedIn = ref(false)
 const loginName = ref('')
+const showGuide = ref(false)
 
 const componentMap = {
   auto: AutoMode,
@@ -102,7 +107,30 @@ body {
 .floating-text{
   padding-bottom: 17px;
 }
+.subtitle { font-size: 12px; color: #999; margin-bottom: 22px; }
 
+.guide-trigger-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+.guide-trigger-link {
+  font-size: 13px;
+  color: #667eea;
+  cursor: pointer;
+  padding: 6px 16px;
+  border-radius: 20px;
+  background: #f0f4ff;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  user-select: none;
+}
+.guide-trigger-link:hover {
+  background: #667eea;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.3);
+  transform: translateY(-1px);
+}
 .app-wrapper {
   background: #fff; border-radius: 16px; padding: 36px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.15); text-align: center; max-width: 900px; width: 100%;
@@ -256,3 +284,4 @@ h1 { font-size: 22px; color: #333; margin-bottom: 6px; }
 .login-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .login-notice { font-size: 11px; color: #bbb; margin-top: 24px; }
 </style>
+
