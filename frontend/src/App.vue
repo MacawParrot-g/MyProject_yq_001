@@ -1,6 +1,6 @@
 <template>
   <div class="app-wrapper" v-if="loggedIn">
-    <h1>"我看行"游戏测试数据可视化&自动入库系统(CI/CD构建版)</h1>
+    <h1>"我看行"游戏测试数据可视化&自动入库系统</h1>
     <div class="subtitle">由深圳市慧动创想科技有限公司--蓝黄金刚鹦鹉开发</div>
 
     <div class="tab-switcher">
