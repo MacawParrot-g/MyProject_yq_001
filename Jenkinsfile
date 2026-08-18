@@ -63,36 +63,30 @@ pipeline {
         }
 
         stage('4. 本地部署 (沙箱环境)') {
-            steps {
-                echo '>>> 准备部署目录...'
-                sh """
-                    # 1. 彻底清理旧的部署文件（保留数据卷目录）
-                    rm -rf ${DEPLOY_DIR}
-                    mkdir -p ${DEPLOY_DIR}
+    steps {
+        echo '>>> 准备部署目录...'
+        sh """
+            # 1. 确保目录存在
+            mkdir -p ${DEPLOY_DIR}
+            mkdir -p ${DEPLOY_DIR}/cicd-data/{mysql,redis,rabbitmq,export,nginx-logs}
+            mkdir -p ${DEPLOY_DIR}/mysql/initsql
+            
+            # 2. 使用 rsync 增量同步（只更新变化的文件）
+            # 注意：排除数据目录，避免覆盖已有数据
+            rsync -av --exclude='cicd-data' --exclude='.git' ./* ${DEPLOY_DIR}/
+            
+            # 3. 验证产物
+            ls -lh ${DEPLOY_DIR}/nginx/html/dist/
+        """
 
-                    # 2. 复制当前最新代码（包含刚构建好的 nginx/html/dist）
-                    # 注意：这里复制的是整个工作空间，所以包含了 backend, frontend, nginx 等所有文件夹
-                    cp -r ./* ${DEPLOY_DIR}/
-                    cp -r ./.??* ${DEPLOY_DIR}/ 2>/dev/null || true # 复制隐藏文件如 .env
-
-                    # 3. 创建必要的数据持久化目录
-                    mkdir -p ${DEPLOY_DIR}/cicd-data/{mysql,redis,rabbitmq,export,nginx-logs}
-                    mkdir -p ${DEPLOY_DIR}/mysql/initsql
-                    
-                    # 4. 确保 nginx 挂载点存在且包含构建产物
-                    # 虽然 cp -r 已经复制了，但为了保险再次确认
-                    ls -lh ${DEPLOY_DIR}/nginx/html/dist/
-                """
-
-                echo '>>> 启动服务...'
-                dir("${DEPLOY_DIR}") {
-                    sh """
-                        docker compose -f ${COMPOSE_FILE} down || true
-                        docker compose -f ${COMPOSE_FILE} up -d --build
-                    """
-                }
-            }
+        echo '>>> 重启服务...'
+        dir("${DEPLOY_DIR}") {
+            sh """
+                docker compose -f ${COMPOSE_FILE} up -d --build --force-recreate
+            """
         }
+    }
+}
     }
 
     post {
