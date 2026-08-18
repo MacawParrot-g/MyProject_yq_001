@@ -71,15 +71,40 @@ pipeline {
             mkdir -p ${DEPLOY_DIR}/cicd-data/{mysql,redis,rabbitmq,export,nginx-logs}
             mkdir -p ${DEPLOY_DIR}/mysql/initsql
             
-            # 2. 使用 rsync 增量同步（只更新变化的文件）
-            # 注意：排除数据目录，避免覆盖已有数据
-            rsync -av --exclude='cicd-data' --exclude='.git' ./* ${DEPLOY_DIR}/
+            # 2. 清理旧代码（保留数据目录）
+            # 保留 cicd-data 目录，删除其他所有内容
+            cd ${DEPLOY_DIR}
+            find . -maxdepth 1 ! -name 'cicd-data' ! -name '.' -exec rm -rf {} + 2>/dev/null || true
+            cd -
             
-            # 3. 验证产物
+            # 3. 复制必要的文件
+            # 复制 docker-compose 文件
+            cp -f docker-compose.cicd.yml ${DEPLOY_DIR}/
+            cp -f .env ${DEPLOY_DIR}/ 2>/dev/null || true
+            
+            # 复制后端
+            cp -rf backend ${DEPLOY_DIR}/
+            
+            # 复制前端构建产物
+            mkdir -p ${DEPLOY_DIR}/nginx/html
+            cp -rf nginx/html/dist ${DEPLOY_DIR}/nginx/html/
+            cp -rf nginx/conf.d ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
+            cp -f nginx/nginx.conf ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
+            
+            # 复制 MySQL 初始化脚本
+            cp -rf mysql ${DEPLOY_DIR}/ 2>/dev/null || true
+            
+            # 复制 Redis 配置
+            cp -rf redis ${DEPLOY_DIR}/ 2>/dev/null || true
+            
+            # 复制其他必要的文件
+            cp -f data/* ${DEPLOY_DIR}/data/ 2>/dev/null || true
+            
+            # 4. 验证产物
             ls -lh ${DEPLOY_DIR}/nginx/html/dist/
         """
 
-        echo '>>> 重启服务...'
+        echo '>>> 启动服务...'
         dir("${DEPLOY_DIR}") {
             sh """
                 docker compose -f ${COMPOSE_FILE} up -d --build --force-recreate
