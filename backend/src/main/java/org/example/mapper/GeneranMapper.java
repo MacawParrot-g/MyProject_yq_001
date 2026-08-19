@@ -93,6 +93,16 @@ public interface GeneranMapper extends BaseMapper<TestStatic> {
                           @Param("frozenOnly") boolean frozenOnly,
                           @Param("recorder") String recorder);
 
+    @Select("<script>" +
+            "SELECT URL, bundleId FROM test_static WHERE record_data IN" +
+            "<foreach collection='dates' item='d' open='(' separator=',' close=')'>" +
+            "#{d}" +
+            "</foreach>" +
+            " ORDER BY RAND() LIMIT 1" +
+            "</script>")
+    TestStatic selectRandomByDates(@Param("dates") List<String> dates);
+
+
 
 
 }
