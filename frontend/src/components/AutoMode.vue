@@ -328,9 +328,9 @@ async function retestFlow() {
       showRetestModal.value = false
       downloadUrl.value = json.data.downloadUrl || ''
       bundleId.value = json.data.bundleId || ''
-      const json = await fetchEvent(bundleId.value)
+      const jsons = await fetchEvent(bundleId.value)
       try{
-      if (json.success) {
+      if (jsons.success) {
         originalCurrentTargetNum.value = json.data.currentTargetNum ?? null
       }}catch (e) {
         alert('服务器无响应，请联系技术人员')
