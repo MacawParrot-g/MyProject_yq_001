@@ -85,6 +85,20 @@
     </div>
     <!-- ... existing code ... -->
 
+    <div class="modal-overlay" v-if="showRetestModal" @click.self="showRetestModal = false">
+      <div class="modal-box">
+        <div class="modal-title">库存已耗尽</div>
+        <div class="modal-desc">当前没有可用的下载任务，请选择操作：</div>
+        <div class="modal-actions">
+          <button class="btn-modal btn-poll" @click="showRetestModal = false; startPolling()">继续轮询</button>
+          <button class="btn-modal btn-retest" @click="retestFlow" :disabled="retestLoading">
+            {{ retestLoading ? '获取中...' : '复测' }}
+          </button>
+          <button class="btn-modal btn-cancel" @click="showRetestModal = false">取消</button>
+        </div>
+      </div>
+    </div>
+
 
     <div class="form-section" v-if="downloadUrl && eventResult">
       <h4>填写入库信息（直接写入MySQL）</h4>
@@ -148,7 +162,8 @@ import {
   fetchAllAttributions,
   fetchFrozen,
   insertRecord,
-  fetchCountByRecorder
+  fetchCountByRecorder,
+  fetchRandomForRetest
 } from '../api/index.js'
 
 const emit = defineEmits(['error'])
@@ -168,6 +183,8 @@ const eventLoading = ref(false)
 const frozenLoading = ref(false)
 const saving = ref(false)
 const saveMsg = ref('')
+const showRetestModal = ref(false)
+const retestLoading = ref(false)
 const qrCanvas = ref(null)
 const timerSeconds = ref(60)
 const timerCountdown = ref(0)
@@ -291,10 +308,7 @@ async function fetchData() {
         alert("初始originalCurrentTargetNum数小于等于1或等于0，后续测试期间可能会没有归因，请注意")
       }
     } else {
-      const go = confirm('当前没有下载任务，是否开启自动轮询（每10秒获取一次）？（注意，多开窗口时请确保使用了不同的浏览器，否则轮询会出bug）')
-      if (go) {
-        startPolling()
-      }
+      showRetestModal.value = true
     }
   } catch (e) {
     if (e.name === 'AbortError') { emit('error', '请求超时，远程服务器响应太慢') }
@@ -302,6 +316,40 @@ async function fetchData() {
   } finally {
     loading.value = false
   }
+}
+
+async function retestFlow() {
+  retestLoading.value = true
+  resetState()
+  try {
+    const dates = getPast3DaysDates()
+    const json = await fetchRandomForRetest(dates)
+    if (json.success && json.data) {
+      showRetestModal.value = false
+      downloadUrl.value = json.data.downloadUrl || ''
+      bundleId.value = json.data.bundleId || ''
+      originalCurrentTargetNum.value = null
+      isSubmit = false
+      await queryEvent()
+    } else {
+      emit('error', json.message || '获取复测数据失败')
+    }
+  } catch (e) {
+    emit('error', '复测请求失败：' + e.message)
+  } finally {
+    retestLoading.value = false
+  }
+}
+
+function getPast3DaysDates() {
+  const dates = []
+  const d = new Date()
+  for (let i = 0; i < 3; i++) {
+    const t = new Date(d)
+    t.setDate(d.getDate() - i)
+    dates.push(t.getFullYear() + '/' + (t.getMonth() + 1) + '/' + t.getDate())
+  }
+  return dates
 }
 
 function startPolling() {
@@ -350,6 +398,45 @@ async function queryEventWithFullMsg() {
   }
 }
 
+// async function queryEvent() {
+//   if (!bundleId.value) return
+//   eventLoading.value = true
+//   emit('error', '')
+//   eventResult.value = ''; newCurrentTargetNum.value = null; attributions.value = []; eventId.value = null; frozenMsg.value = ''
+//   try {
+//     const [eventJson, attrResults] = await Promise.all([
+//       fetchEvent(bundleId.value),
+//       fetchAllAttributions(bundleId.value)
+//     ])
+//     if (eventJson.success && eventJson.data) {
+//       const newCurrent = eventJson.data.currentTargetNum
+//       eventId.value = eventJson.data.id ?? null
+//       if (newCurrent !== originalCurrentTargetNum.value) {
+//         eventResult.value = 'has_event'
+//         newCurrentTargetNum.value = newCurrent
+//       } else {
+//         eventResult.value = 'no_event'
+//       }
+//     } else {
+//       emit('error', '事件接口返回异常：' + (eventJson.resultMsg || '未知错误'))
+//     }
+//     const found = []
+//     for (const { type, json } of attrResults) {
+//       if (json.success && json.data) {
+//         if (Array.isArray(json.data) && json.data.length > 0) {
+//           found.push(type)
+//         } else if (!Array.isArray(json.data) && Object.keys(json.data).length > 0) {
+//           found.push(type)
+//         }
+//       }
+//     }
+//     attributions.value = found
+//   } catch (e) {
+//     emit('error', '事件查询失败：' + e.message)
+//   } finally {
+//     eventLoading.value = false
+//   }
+
 async function queryEvent() {
   if (!bundleId.value) return
   eventLoading.value = true
@@ -363,11 +450,16 @@ async function queryEvent() {
     if (eventJson.success && eventJson.data) {
       const newCurrent = eventJson.data.currentTargetNum
       eventId.value = eventJson.data.id ?? null
-      if (newCurrent !== originalCurrentTargetNum.value) {
-        eventResult.value = 'has_event'
-        newCurrentTargetNum.value = newCurrent
+      if (originalCurrentTargetNum.value !== null) {
+        if (newCurrent !== originalCurrentTargetNum.value) {
+          eventResult.value = 'has_event'
+          newCurrentTargetNum.value = newCurrent
+        } else {
+          eventResult.value = 'no_event'
+        }
       } else {
-        eventResult.value = 'no_event'
+        newCurrentTargetNum.value = newCurrent
+        eventResult.value = newCurrent != null && newCurrent > 0 ? 'has_event' : 'no_event'
       }
     } else {
       emit('error', '事件接口返回异常：' + (eventJson.resultMsg || '未知错误'))
@@ -390,6 +482,23 @@ async function queryEvent() {
   }
 }
 
+function resetState() {
+  downloadUrl.value = '';
+  bundleId.value = '';
+  originalCurrentTargetNum.value = null
+  eventResult.value = '';
+  newCurrentTargetNum.value = null;
+  attributions.value = []
+  eventId.value = null;
+  frozenMsg.value = '';
+  duplicateTip.value = '';
+  saveMsg.value = ''
+  form.exception_type = '';
+  form.remark = '';
+  form.recorder = localStorage.getItem('userName') || '';
+  form.record_data = getTodayStr()
+  isFrozen.value=''
+}
 async function doFrozen() {
   if (!eventId.value) return
   frozenLoading.value = true; emit('error', '')
@@ -445,23 +554,23 @@ async function saveToMySQL() {
   finally { saving.value = false }
 }
 
-function resetState() {
-  downloadUrl.value = '';
-  bundleId.value = '';
-  originalCurrentTargetNum.value = null
-  eventResult.value = '';
-  newCurrentTargetNum.value = null;
-  attributions.value = []
-  eventId.value = null;
-  frozenMsg.value = '';
-  duplicateTip.value = '';
-  saveMsg.value = ''
-  form.exception_type = '';
-  form.remark = '';
-  form.recorder = localStorage.getItem('userName') || '';
-  form.record_data = getTodayStr()
-  isFrozen.value=''
-}
+// function resetState() {
+//   downloadUrl.value = '';
+//   bundleId.value = '';
+//   originalCurrentTargetNum.value = null
+//   eventResult.value = '';
+//   newCurrentTargetNum.value = null;
+//   attributions.value = []
+//   eventId.value = null;
+//   frozenMsg.value = '';
+//   duplicateTip.value = '';
+//   saveMsg.value = ''
+//   form.exception_type = '';
+//   form.remark = '';
+//   form.recorder = localStorage.getItem('userName') || '';
+//   form.record_data = getTodayStr()
+//   isFrozen.value=''
+// }
 
 function startTimer() {
   if (!timerSeconds.value || timerSeconds.value < 1) return
