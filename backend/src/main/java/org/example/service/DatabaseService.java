@@ -25,4 +25,6 @@ public interface DatabaseService {
 
     Result queryByPage(String ascribe, boolean frozenOnly, String recorder, int page, int size);
 
+    Result getRandomRecordForRetest(List<String> dates);
+
 }
