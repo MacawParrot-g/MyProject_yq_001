@@ -84,4 +84,14 @@ public class DatabaseController {
             return Result.fail("删除失败：" + e.getMessage());
         }
     }
+    @PostMapping("/api/record/random-for-retest")
+    @LogExecutionTime("随机获取复测数据")
+    public Result getRandomRecordForRetest(@RequestBody Map<String, List<String>> body) {
+        try {
+            List<String> dates = body.get("dates");
+            return databaseService.getRandomRecordForRetest(dates);
+        } catch (Exception e) {
+            return Result.fail("获取复测数据失败：" + e.getMessage());
+        }
+    }
 }
