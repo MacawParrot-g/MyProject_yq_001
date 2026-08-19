@@ -26,7 +26,7 @@ function close() {
             <li>🔄 <strong>多归因平台支持</strong> — 同时支持 AppFlyer、Adjust、Singular、Tenjin 四大归因平台</li>
             <li>⏱ <strong>定时查询</strong> — 自定义倒计时自动查询事件，解放双手</li>
             <li>🧊 <strong>冻结机制</strong> — 对无事件应用一键冻结，快速标记处理状态</li>
-            <li>🔁 <strong>去重功能</strong> — 自动去重开关，防止测到重复的游戏(按要求开启)</li>
+            <li>🔁 <strong>去重功能</strong> — 自动去重开关，防止测到重复的游戏(默认关闭，按要求开启)</li>
           </ul>
         </div>
 
@@ -115,9 +115,10 @@ function close() {
         <div class="guide-footer-signature">
           <p>本系统由</p>
           <p class="guide-dev-name">蓝黄金刚鹦鹉</p>
-          <p>意见联系</p>
-          <p class="guide-company">2448248501@qq.com(本人邮箱)</p>
           <p>开发维护</p>
+          <br/>
+          <p>联系开发者</p>
+          <p class="guide-company">2448248501@qq.com(本人邮箱)</p>
           <p class="guide-company">深圳市慧动创想科技有限公司</p>
         </div>
 
