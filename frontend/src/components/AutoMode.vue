@@ -231,7 +231,7 @@ async function renderQR(url) {
 watch(downloadUrl, (val) => { renderQR(val) })
 
 function comfirm(){
-  if(isSubmit===false){
+  if(isSubmit===false&&downloadUrl.value!==null){
     let com=confirm("请确认是否已入库该条测试数据,刷新会导致数据丢失！")
     if(com){
       fetchData()
@@ -328,9 +328,14 @@ async function retestFlow() {
       showRetestModal.value = false
       downloadUrl.value = json.data.downloadUrl || ''
       bundleId.value = json.data.bundleId || ''
-      originalCurrentTargetNum.value = null
+      const json = await fetchEvent(bundleId.value)
+      try{
+      if (json.success) {
+        originalCurrentTargetNum.value = json.data.currentTargetNum ?? null
+      }}catch (e) {
+        alert('服务器无响应，请联系技术人员')
+      }
       isSubmit = false
-      await queryEvent()
     } else {
       emit('error', json.message || '获取复测数据失败')
     }
