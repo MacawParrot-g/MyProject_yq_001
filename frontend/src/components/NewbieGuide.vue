@@ -12,21 +12,21 @@ function close() {
   <div class="guide-overlay" @click.self="close">
     <div class="guide-modal">
       <div class="guide-header">
-        <h2>📘 新人指南</h2>
+        <h2>新人指南</h2>
         <button class="guide-close-btn" @click="close">✕</button>
       </div>
 
       <div class="guide-body">
 
         <div class="guide-section">
-          <h3>✨ 系统亮点</h3>
+          <h3>系统亮点</h3>
           <ul class="guide-highlight-list">
             <li>🚀 <strong>自动化测试流程</strong> — 自动拉取任务、生成二维码、查询事件、一键入库，大幅减少人工操作</li>
             <li>📊 <strong>数据看板</strong> — 实时查看入库数据、服务器状态，支持归因筛选与分页管理</li>
             <li>🔄 <strong>多归因平台支持</strong> — 同时支持 AppFlyer、Adjust、Singular、Tenjin 四大归因平台</li>
             <li>⏱ <strong>定时查询</strong> — 自定义倒计时自动查询事件，解放双手</li>
             <li>🧊 <strong>冻结机制</strong> — 对无事件应用一键冻结，快速标记处理状态</li>
-            <li>🔁 <strong>去重功能</strong> — 自动去重开关，防止重复入库</li>
+            <li>🔁 <strong>去重功能</strong> — 自动去重开关，防止测到重复的游戏(按要求开启)</li>
           </ul>
         </div>
 
@@ -40,7 +40,7 @@ function close() {
             <ol>
               <li>进入 <strong>「自动」</strong> 标签页，系统会自动轮询拉取下载任务</li>
               <li>扫描页面上生成的 <strong>二维码</strong>，在设备上安装应用</li>
-              <li>安装完成后开始测试应用，系统会每 10 秒自动查询事件</li>
+              <li>安装完成后开始测试应用，系统默认会每 10 秒自动查询事件，可自己改时长</li>
               <li>测试完成后，点击 <strong>「查询事件」</strong> 确认事件数变化</li>
               <li>在下方表单中填写 <strong>异常类型</strong> 和 <strong>备注</strong>，点击 <strong>「直接入库MySQL」</strong> 完成入库</li>
             </ol>
@@ -49,7 +49,7 @@ function close() {
           <div class="guide-step">
             <h4>二、手动模式</h4>
             <ol>
-              <li>进入 <strong>「手动」</strong> 标签页，手动粘贴下载链接</li>
+              <li>进入 <strong>「手动」</strong> 标签页，手动粘贴对应的appid(有要求的时候在群里发给你的那个)</li>
               <li>系统生成二维码，后续流程与自动模式一致</li>
               <li>适用于自动模式未覆盖到的特殊场景</li>
             </ol>
@@ -101,6 +101,9 @@ function close() {
                   <li>需要登录但无法注册的应用</li>
                   <li>必须付费才能使用的应用</li>
                   <li>版本不兼容（如操作系统要求 iOS 17 以上）的应用</li>
+                  <li>地区不支持的应用</li>
+                  <li>越狱检测的应用(有时会提示检测到root)</li>
+                  <li>网络太撇了进不去的</li>
                 </ul>
               </div>
             </div>
@@ -111,7 +114,9 @@ function close() {
 
         <div class="guide-footer-signature">
           <p>本系统由</p>
-          <p class="guide-dev-name">🦜 蓝黄金刚鹦鹉</p>
+          <p class="guide-dev-name">蓝黄金刚鹦鹉</p>
+          <p>意见联系</p>
+          <p class="guide-company">2448248501@qq.com(本人邮箱)</p>
           <p>开发维护</p>
           <p class="guide-company">深圳市慧动创想科技有限公司</p>
         </div>
