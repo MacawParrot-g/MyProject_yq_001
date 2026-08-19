@@ -128,3 +128,11 @@ export function getExportDownloadUrl(recorder) {
 export function fetchSystemInfo() {
     return fetchWithTimeout('/api/system/info', {}, 15000).then(safeJson)
 }
+
+export function fetchRandomForRetest(dates) {
+    return fetchWithTimeout('/api/record/random-for-retest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dates })
+    }, 30000).then(safeJson)
+}
