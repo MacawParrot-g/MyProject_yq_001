@@ -331,7 +331,7 @@ async function retestFlow() {
       const jsons = await fetchEvent(bundleId.value)
       try{
       if (jsons.success) {
-        originalCurrentTargetNum.value = json.data.currentTargetNum ?? null
+        originalCurrentTargetNum.value = jsons.data.currentTargetNum ?? null
       }}catch (e) {
         alert('服务器无响应，请联系技术人员')
       }
