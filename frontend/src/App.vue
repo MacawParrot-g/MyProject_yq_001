@@ -1,6 +1,6 @@
 <template>
   <div class="app-wrapper" v-if="loggedIn">
-    <h1>"我看行"游戏测试数据可视化&自动入库系统(测试服)</h1>
+    <h1>"我看行"游戏测试数据可视化&自动入库系统(CI/CD构建版)</h1>
     <div class="subtitle">由深圳市慧动创想科技有限公司--蓝黄金刚鹦鹉开发</div>
 
     <div class="guide-trigger-bar">
@@ -283,5 +283,63 @@ h1 { font-size: 22px; color: #333; margin-bottom: 6px; }
 .login-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
 .login-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 .login-notice { font-size: 11px; color: #bbb; margin-top: 24px; }
-</style>
 
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.modal-box {
+  background: #fff;
+  border-radius: 10px;
+  padding: 28px 32px;
+  min-width: 340px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+  text-align: center;
+}
+.modal-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #333;
+}
+.modal-desc {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 22px;
+}
+.modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.btn-modal {
+  padding: 10px 0;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn-modal:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.btn-poll {
+  background: #ffc107;
+  color: #856404;
+}
+.btn-retest {
+  background: #28a745;
+  color: #fff;
+}
+.btn-cancel {
+  background: #e2e3e5;
+  color: #383d41;
+}
+</style>
