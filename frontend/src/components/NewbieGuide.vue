@@ -90,6 +90,7 @@ function close() {
               <div>
                 <strong>其他类型应用</strong>
                 <p>如无法运行的应用、商城类、需要登录的应用、其他工具类应用等，<strong>5 分钟以内能出事件就可以入库</strong>。</p>
+                <p>如果您使用的是测试服(在标题一栏会用括号标记测试服三字)，请记得一定及时导出数据，测试环境一旦出现数据损坏开发者概不负责！！！</p>
               </div>
             </div>
             <div class="guide-rule-item guide-rule-danger">
