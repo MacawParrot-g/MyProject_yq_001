@@ -178,6 +178,22 @@ public class DatabaseServiceImpl implements DatabaseService, CommandLineRunner {
     }
 
     @Override
+    public Result getRandomRecordForRetest(List<String> dates) {
+        if (dates == null || dates.isEmpty()) {
+            return Result.fail("日期列表不能为空");
+        }
+        TestStatic record = generanMapper.selectRandomByDates(dates);
+        if (record == null) {
+            return Result.fail("过去3天内没有可复测的数据");
+        }
+        Map<String, String> data = Map.of(
+                "downloadUrl", record.getUrl(),
+                "bundleId", record.getBundleId()
+        );
+        return Result.success("随机获取复测数据成功", data);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteRecord(String url) {
         return generanMapper.deleteByURL(url);
