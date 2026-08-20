@@ -136,3 +136,48 @@ export function fetchRandomForRetest(dates) {
         body: JSON.stringify({ dates })
     }, 30000).then(safeJson)
 }
+
+export function authLogin(uid, pwd) {
+    return fetchWithTimeout('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid, pwd })
+    }, 15000).then(safeJson)
+}
+
+export function authLogout() {
+    return fetchWithTimeout('/api/auth/logout', { method: 'POST' }, 10000).then(safeJson)
+}
+
+export function authStatus() {
+    return fetchWithTimeout('/api/auth/status', {}, 10000).then(safeJson)
+}
+
+export function createUser(name, pwd, type) {
+    return fetchWithTimeout('/api/auth/user/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, pwd, type })
+    }, 15000).then(safeJson)
+}
+
+export function deleteUser(uid) {
+    return fetchWithTimeout('/api/auth/user/delete?uid=' + encodeURIComponent(uid), {
+        method: 'DELETE'
+    }, 15000).then(safeJson)
+}
+
+export function fetchUserList() {
+    return fetchWithTimeout('/api/auth/user/list', {}, 15000).then(safeJson)
+}
+
+export function fetchAdminRecordList(ascribe, frozen, page = 1, size = 15, recorder = '', recordData = '') {
+    const params = new URLSearchParams()
+    params.append('page', page)
+    params.append('size', size)
+    if (ascribe) params.append('ascribe', ascribe)
+    if (frozen) params.append('frozen', 'true')
+    if (recorder) params.append('recorder', recorder)
+    if (recordData) params.append('recordData', recordData)
+    return fetchWithTimeout('/api/record/list?' + params.toString(), {}, 30000).then(safeJson)
+}
