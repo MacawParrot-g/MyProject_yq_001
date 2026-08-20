@@ -3,12 +3,19 @@
     <h1>"我看行"游戏测试数据可视化&自动入库系统(测试服)</h1>
     <div class="subtitle">由深圳市慧动创想科技有限公司--蓝黄金刚鹦鹉开发</div>
 
-    <div class="guide-trigger-bar">
-      <span class="guide-trigger-link" @click="showGuide = true">新人指南</span>
+    <div class="top-bar">
+      <div class="guide-trigger-bar">
+        <span class="welcome-text">用户：{{ displayName }}</span>
+        <span class="welcome-text">{{accType}}</span>
+        <span class="guide-trigger-link" @click="showGuide = true">新人指南</span>
+      </div>
+      <button class="logout-btn" @click="doLogout" :disabled="loggingOut">
+        {{ loggingOut ? '退出中...' : '🚪 退出登录' }}
+      </button>
     </div>
 
     <div class="tab-switcher">
-      <button v-for="tab in tabs" :key="tab.key" class="tab-btn" :class="{ active: mode === tab.key }" @click="switchMode(tab.key)">
+      <button v-for="tab in filteredTabs" :key="tab.key" class="tab-btn" :class="{ active: mode === tab.key }" @click="switchMode(tab.key)">
         {{ tab.label }}
       </button>
     </div>
@@ -22,39 +29,57 @@
   <div class="login-overlay" v-if="!loggedIn">
     <div class="login-card">
       <h1>我看行"游戏测试数据可视化&自动入库系统3.0</h1>
-      <div class="login-subtitle">请输入您的姓名开始使用</div>
+      <div class="login-subtitle">请输入账号密码登录</div>
       <div class="login-form">
-        <input v-model="loginName" placeholder="请输入姓名" @keyup.enter="doLogin" class="login-input" />
-        <button class="login-btn" @click="doLogin" :disabled="!loginName.trim()">进入系统</button>
+        <input v-model="loginUid" placeholder="请输入账号" @keyup.enter="doLogin" class="login-input" />
+        <input v-model="loginPwd" type="password" placeholder="请输入密码" @keyup.enter="doLogin" class="login-input" />
+        <button class="login-btn" @click="doLogin" :disabled="!loginUid.trim() || !loginPwd.trim() || loginLoading">
+          {{ loginLoading ? '登录中...' : '进入系统' }}
+        </button>
+        <div v-if="loginError" class="login-error">{{ loginError }}</div>
       </div>
       <div class="subtitle">由深圳市慧动创想科技有限公司--蓝黄金刚鹦鹉开发</div>
     </div>
   </div>
 </template>
 
-<script setup>
-import {ref, onMounted, reactive, computed} from 'vue'
+<script setup>import {ref, onMounted, computed} from 'vue'
 import AutoMode from './components/AutoMode.vue'
 import ManualMode from './components/ManualMode.vue'
 import ExportMode from './components/ExportMode.vue'
 import DataVisitable from "./components/DataVisitable.vue";
 import QRCodeBuilderByMan from "./components/QRCodeBuilderByMan.vue";
 import NewbieGuide from "./components/NewbieGuide.vue";
+import AdminPanel from "./components/AdminPanel.vue";
+import { authLogin, authLogout, authStatus } from './api/index.js'
 
 const mode = ref('auto')
 const errorMsg = ref('')
 const loggedIn = ref(false)
-const loginName = ref('')
+const loginUid = ref('')
+const loginPwd = ref('')
+const loginLoading = ref(false)
+const loginError = ref('')
+const loggingOut = ref(false)
 const showGuide = ref(false)
+const accType = ref('USER')
+const displayName = ref('')
 
-const componentMap = {
-  auto: AutoMode,
-  manual: ManualMode,
-  export: ExportMode,
-  qrcode: QRCodeBuilderByMan,
-  data: DataVisitable
-}
-const currentComponent = computed(() => componentMap[mode.value])
+const componentMap = computed(() => {
+  const map = {
+    auto: AutoMode,
+    manual: ManualMode,
+    export: ExportMode,
+    qrcode: QRCodeBuilderByMan,
+  }
+  if (accType.value === 'ADMIN') {
+    map.data = AdminPanel
+  } else {
+    map.data = DataVisitable
+  }
+  return map
+})
+const currentComponent = computed(() => componentMap.value[mode.value])
 
 const tabs = [
   { key: 'auto', label: '自动' },
@@ -64,30 +89,70 @@ const tabs = [
   { key: 'data', label: '数据看板' }
 ]
 
-onMounted(() => {
-  const saved = localStorage.getItem('userName')
-  if (saved) {
-    loggedIn.value = true
+const filteredTabs = computed(() => {
+  if (accType.value === 'ADMIN') {
+    return tabs.map(t => t.key === 'data' ? { ...t, label: '后台管理' } : t)
+  }
+  return tabs
+})
+
+onMounted(async () => {
+  try {
+    const json = await authStatus()
+    if (json.success && json.data && json.data.loggedIn) {
+      loggedIn.value = true
+      accType.value = json.data.data.type || 'USER'
+      displayName.value = json.data.data.name || ''
+      localStorage.setItem('userName', json.data.data.name || '')
+      localStorage.setItem('accType', json.data.data.type || 'USER')
+    }
+  } catch (e) {
+    console.warn('检查登录状态失败:', e)
   }
 })
 
-function doLogin() {
-  const name = loginName.value.trim()
-  if (!name) return
-  localStorage.setItem('userName', name)
-  loggedIn.value = true
-
+async function doLogin() {
+  if (!loginUid.value.trim() || !loginPwd.value.trim()) return
+  loginLoading.value = true
+  loginError.value = ''
+  try {
+    const json = await authLogin(loginUid.value.trim(), loginPwd.value.trim())
+    if (json.success) {
+      const data = json.data
+      localStorage.setItem('userName', data.name)
+      localStorage.setItem('accType', data.type)
+      accType.value = data.type
+      displayName.value = data.name
+      loggedIn.value = true
+      mode.value = 'auto'
+    } else {
+      loginError.value = json.message || '登录失败'
+    }
+  } catch (e) {
+    loginError.value = '登录请求失败：' + e.message
+  } finally {
+    loginLoading.value = false
+  }
 }
 
-
-// function fetchDataByName(){
-//   const json=await.fetchCountByRecorder(form);
-//   if(json.success){
-//     alert("目标100条,已完成,"+json.number+"条")
-//   }else{
-//     alert("获取事件数失败，请联系工作人员")
-//   }
-// }
+async function doLogout() {
+  loggingOut.value = true
+  try {
+    await authLogout()
+  } catch (e) { /* silent */ }
+  finally {
+    localStorage.removeItem('userName')
+    localStorage.removeItem('accType')
+    loggedIn.value = false
+    accType.value = 'USER'
+    displayName.value = ''
+    loginUid.value = ''
+    loginPwd.value = ''
+    loginError.value = ''
+    mode.value = 'auto'
+    loggingOut.value = false
+  }
+}
 
 function setError(msg) { errorMsg.value = msg }
 
@@ -162,6 +227,51 @@ h1 { font-size: 22px; color: #333; margin-bottom: 6px; }
   transition: transform 0.2s, box-shadow 0.2s;
   margin-bottom: 16px;
   letter-spacing: 0.5px;
+}
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.guide-trigger-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.welcome-text {
+  font-size: 13px;
+  color: #667eea;
+  font-weight: 600;
+}
+.logout-btn {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  color: #fff;
+  border: none;
+  padding: 8px 20px;
+  font-size: 13px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.logout-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(238, 90, 36, 0.4);
+}
+.logout-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+.login-error {
+  color: #e74c3c;
+  font-size: 13px;
+  font-weight: 600;
+  background: #fdecea;
+  padding: 8px 14px;
+  border-radius: 8px;
+  text-align: center;
 }
 .btn-today-count:hover {
   transform: translateY(-2px);
