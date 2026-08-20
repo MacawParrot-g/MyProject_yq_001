@@ -431,65 +431,7 @@ onUnmounted(() => { cancelRetestTimer() })
         {{ dedupLoading ? '处理中...' : (dedupEnabled ? '🟢 已开启' : '⚪ 已关闭') }}
       </button>
     </div>
-    <div class="sys-monitor-card">
-      <div class="sys-monitor-header">
-        <span class="sys-monitor-title">🖥 服务器运行状态</span>
-        <button class="sys-refresh-btn" @click="loadSystemInfo" :disabled="sysLoading">
-          {{ sysLoading ? '加载中...' : '刷新' }}
-        </button>
-      </div>
-      <div v-if="sysInfo" class="sys-monitor-body">
-        <div class="sys-info-grid">
-          <div class="sys-info-item">
-            <span class="sys-label">操作系统</span>
-            <span class="sys-value">{{ sysInfo.osName }}</span>
-          </div>
-          <div class="sys-info-item">
-            <span class="sys-label">系统架构</span>
-            <span class="sys-value">{{ sysInfo.osArch }}</span>
-          </div>
-          <div class="sys-info-item">
-            <span class="sys-label">CPU</span>
-            <span class="sys-value">{{ sysInfo.cpuName }} ({{ sysInfo.cpuCores }}核)</span>
-          </div>
-          <div class="sys-info-item">
-            <span class="sys-label">CPU占用</span>
-            <span class="sys-value" :class="{ 'sys-warn': sysInfo.cpuUsagePercent > 80 }">{{ sysInfo.cpuUsagePercent }}%</span>
-          </div>
-          <div class="sys-info-item">
-            <span class="sys-label">内存总量</span>
-            <span class="sys-value">{{ sysInfo.totalMemoryGB }} GB</span>
-          </div>
-          <div class="sys-info-item">
-            <span class="sys-label">已用内存</span>
-            <span class="sys-value" :class="{ 'sys-warn': sysInfo.memoryUsagePercent > 85 }">{{ sysInfo.usedMemoryGB }} GB ({{ sysInfo.memoryUsagePercent }}%)</span>
-          </div>
-          <div class="sys-info-item">
-            <span class="sys-label">可用内存</span>
-            <span class="sys-value">{{ sysInfo.availableMemoryGB }} GB</span>
-          </div>
-          <div class="sys-info-item">
-            <span class="sys-label">服务运行时长</span>
-            <span class="sys-value">{{ sysInfo.javaUptime }}</span>
-          </div>
-        </div>
-        <div class="sys-progress-bar">
-          <div class="sys-progress-label">内存使用率</div>
-          <div class="sys-progress-track">
-            <div class="sys-progress-fill" :style="{ width: sysInfo.memoryUsagePercent + '%' }" :class="{ 'sys-progress-danger': sysInfo.memoryUsagePercent > 85 }"></div>
-          </div>
-          <span class="sys-progress-text">{{ sysInfo.memoryUsagePercent }}%</span>
-        </div>
-        <div class="sys-progress-bar">
-          <div class="sys-progress-label">CPU使用率</div>
-          <div class="sys-progress-track">
-            <div class="sys-progress-fill" :style="{ width: sysInfo.cpuUsagePercent + '%' }" :class="{ 'sys-progress-danger': sysInfo.cpuUsagePercent > 80 }"></div>
-          </div>
-          <span class="sys-progress-text">{{ sysInfo.cpuUsagePercent }}%</span>
-        </div>
-      </div>
-      <div v-else-if="sysLoading" class="sys-loading">正在获取系统信息...</div>
-    </div>
+    
 
     <div class="dv-filter">
       <div class="dv-filter-row">
@@ -589,8 +531,6 @@ onUnmounted(() => { cancelRetestTimer() })
             </td>
             <td class="dv-action-cell">
               <button class="dv-btn-retest" @click="openRetest(item)">重新测试</button>
-              <button class="dv-btn-edit" @click="startEdit(item)">编辑</button>
-              <button class="dv-btn-del" @click="handleDelete(item)">删除</button>
             </td>
           </template>
         </tr>
