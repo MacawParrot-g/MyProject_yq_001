@@ -168,7 +168,7 @@ import {
 
 const emit = defineEmits(['error'])
 const exceptionOptions = ['正常','iOS16闪退','iOS13/14/16均闪退','需要iOS18以上','地区不支持','硬件版本过低','超过10分钟0上报','越狱检测','其他','验证已解决']
-const template=['需要iOS17以上','需要登陆后使用，无法注册','卡死在加载页进不去','非英语汉语软件，看不懂','网络检测，无法进入','需要订阅后使用']
+const template=['需要iOS17以上','需要登陆后使用，无法注册','卡死在加载页进不去','非英语汉语软件，看不懂','网络检测，无法进入','需要订阅后使用','非常卡顿，无法正常使用']
 const downloadUrl = ref('')
 const bundleId = ref('')
 const originalCurrentTargetNum = ref(null)
