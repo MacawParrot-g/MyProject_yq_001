@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 
 const emit = defineEmits(['close'])
-
+const displayName = ref(localStorage.getItem('userName') || '默认名称')
 function close() {
   emit('close')
 }
@@ -17,7 +17,7 @@ function close() {
       </div>
 
       <div class="guide-body">
-
+      <p style="font-size:16px; text-align:center; font-family: 微软雅黑;">亲爱的{{displayName}}，欢迎您入职深圳市慧动创想科技有限公司，为了您在工作的时候能更从容舒适，现在，请您花费几分钟的时间阅读以下的系统使用指南</p>
         <div class="guide-section">
           <h3>系统亮点</h3>
           <ul class="guide-highlight-list">
