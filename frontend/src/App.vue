@@ -62,7 +62,7 @@
 
       <div class="content-area">
         <keep-alive>
-          <component :is="currentComponent" @error="setError" />
+          <component :is="currentComponent" @error="setError" @record-saved="fetchTodayCount" />
         </keep-alive>
       </div>
     </main>
@@ -94,7 +94,7 @@
   </div>
 </template>
 
-<script setup>import {ref, onMounted, computed, onUnmounted} from 'vue'
+<script setup>import {ref, onMounted, computed, onUnmounted,watch} from 'vue'
 import { authLogin, authLogout, authStatus, fetchCountByRecorder } from './api/index.js'
 import AutoMode from './components/AutoMode.vue'
 import ManualMode from './components/ManualMode.vue'
@@ -117,7 +117,7 @@ const accType = ref('USER')
 const displayName = ref('')
 const sidebarCollapsed = ref(false)
 const todayCount = ref(0)
-let todayCountTimer = null
+// let todayCountTimer = null
 const tabIcons = {
   auto: 'A',
   manual: 'M',
@@ -179,11 +179,18 @@ onMounted(async () => {
 
 onMounted(() => {
   fetchTodayCount()
-  todayCountTimer = setInterval(fetchTodayCount, 30000)
 })
-onUnmounted(() => {
-  if (todayCountTimer) clearInterval(todayCountTimer)
+
+
+watch(sidebarCollapsed, (newVal) => {
+  if (!newVal) {
+    fetchTodayCount()
+  }
 })
+
+// onUnmounted(() => {
+//   if (todayCountTimer) clearInterval(todayCountTimer)
+// })
 
 async function doLogin() {
   if (!loginUid.value.trim() || !loginPwd.value.trim()) return
