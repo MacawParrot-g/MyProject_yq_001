@@ -530,7 +530,10 @@ async function saveToMySQL() {
       remark: finalRemark,
       isOutput: 0
     })
-    if (json.success) { saveMsg.value = '✅ ' + (json.resultMsg || '入库成功') }
+    if (json.success) { 
+      saveMsg.value = '✅ ' + (json.resultMsg || '入库成功') 
+      isFrozen.value=''
+                      }
     else { emit('error', json.resultMsg || '入库失败') }
   } catch (e) { emit('error', '入库请求失败：' + e.message) }
   finally { saving.value = false }
