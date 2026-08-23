@@ -711,6 +711,7 @@ async function doFrozen() {
 }
 
 async function saveToMySQL() {
+  emit('record-saved')
   if (!form.exception_type.trim()) { emit('error', '请选择异常类型'); return }
   saving.value = true; saveMsg.value = ''
   if(newCurrentTargetNum.value===0||newCurrentTargetNum.value===null){
@@ -739,7 +740,6 @@ async function saveToMySQL() {
     if (json.success) {
       saveMsg.value = '✅ ' + (json.resultMsg || '入库成功')
       isSubmit=true;
-      emit('record-saved')
     }
     else { emit('error', json.resultMsg || '入库失败') }
   } catch (e) { emit('error', '入库请求失败：' + e.message) }
