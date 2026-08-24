@@ -103,6 +103,7 @@ import DataVisitable from "./components/DataVisitable.vue";
 import QRCodeBuilderByMan from "./components/QRCodeBuilderByMan.vue";
 import NewbieGuide from "./components/NewbieGuide.vue";
 import AdminPanel from "./components/AdminPanel.vue";
+import DevMode from "./components/DevMode.vue";
 
 const mode = ref('auto')
 const errorMsg = ref('')
@@ -121,6 +122,7 @@ const todayCount = ref(0)
 const tabIcons = {
   auto: 'A',
   manual: 'M',
+  develop: '🛠',
   qrcode: 'Q',
   export: 'E',
   data: 'D',
@@ -132,9 +134,11 @@ const componentMap = computed(() => {
     manual: ManualMode,
     export: ExportMode,
     qrcode: QRCodeBuilderByMan,
+    develop:'',
   }
   if (accType.value === 'ADMIN') {
     map.data = AdminPanel
+    map.develop = DevMode
   } else {
     map.data = DataVisitable
   }
@@ -145,16 +149,21 @@ const currentComponent = computed(() => componentMap.value[mode.value])
 const tabs = [
   { key: 'auto', label: '自动模式' },
   { key: 'manual', label: '手动模式' },
+  { key: 'develop', label: '开发者模式' },
   { key: 'qrcode', label: '二维码生成' },
   { key: 'export', label: '数据导出' },
   { key: 'data', label: '数据看板' }
 ]
 
 const filteredTabs = computed(() => {
-  if (accType.value === 'ADMIN') {
-    return tabs.map(t => t.key === 'data' ? { ...t, label: '管理员看板' } : t)
+  let result = tabs
+  if (accType.value !== 'ADMIN') {
+    result = result.filter(t => t.key !== 'develop')
   }
-  return tabs
+  if (accType.value === 'ADMIN') {
+    result = result.map(t => t.key === 'data' ? { ...t, label: '管理员看板' } : t)
+  }
+  return result
 })
 
 const currentTabLabel = computed(() => {
