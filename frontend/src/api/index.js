@@ -215,3 +215,57 @@ export function fetchDailyReport(dateInput) {
     const formatted = parts[0] + '/' + parseInt(parts[1]) + '/' + parseInt(parts[2])
     return fetchWithTimeout('/api/record/daily-report?recordData=' + encodeURIComponent(formatted), {}, 30000).then(safeJson)
 }
+
+export function fetchDevHistory() {
+    return fetchWithTimeout('/api/dev/history', {}, 15000).then(safeJson)
+}
+
+export function saveDevHistory(record) {
+    return fetchWithTimeout('/api/dev/history/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(record)
+    }, 15000).then(safeJson)
+}
+
+export function clearDevHistory() {
+    return fetchWithTimeout('/api/dev/history/clear', { method: 'DELETE' }, 15000).then(safeJson)
+}
+
+export function fetchDevRedisStatus() {
+    return fetchWithTimeout('/api/dev/history/redis-status', {}, 10000).then(safeJson)
+}
+
+export function deleteDevHistoryRecord(timestamp) {
+    return fetchWithTimeout('/api/dev/history/delete?timestamp=' + encodeURIComponent(timestamp), {
+        method: 'DELETE'
+    }, 15000).then(safeJson)
+}
+
+export function adminRecordSearch(params) {
+    return fetchWithTimeout('/api/admin/record/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params)
+    }, 30000).then(safeJson)
+}
+
+export function adminRecordStats() {
+    return fetchWithTimeout('/api/admin/record/stats', {}, 15000).then(safeJson)
+}
+
+export function adminBatchDelete(urls) {
+    return fetchWithTimeout('/api/admin/record/batch-delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urls })
+    }, 30000).then(safeJson)
+}
+
+export function adminRecordSummary(params) {
+    return fetchWithTimeout('/api/admin/record/summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params)
+    }, 30000).then(safeJson)
+}
