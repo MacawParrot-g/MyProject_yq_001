@@ -269,3 +269,65 @@ export function adminRecordSummary(params) {
         body: JSON.stringify(params)
     }, 30000).then(safeJson)
 }
+
+export function fetchTableList() {
+    return fetchWithTimeout('/api/dev/table/list', {}, 15000).then(safeJson)
+}
+
+export function fetchTableDescribe(tableName) {
+    return fetchWithTimeout('/api/dev/table/describe?tableName=' + encodeURIComponent(tableName), {}, 15000).then(safeJson)
+}
+
+export function createTable(tableName, columnDefinitions) {
+    return fetchWithTimeout('/api/dev/table/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableName, columnDefinitions })
+    }, 30000).then(safeJson)
+}
+
+export function dropTable(tableName) {
+    return fetchWithTimeout('/api/dev/table/drop?tableName=' + encodeURIComponent(tableName), {
+        method: 'DELETE'
+    }, 15000).then(safeJson)
+}
+
+export function addColumn(tableName, columnDefinition) {
+    return fetchWithTimeout('/api/dev/table/column/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableName, columnDefinition })
+    }, 15000).then(safeJson)
+}
+
+export function modifyColumn(tableName, columnDefinition) {
+    return fetchWithTimeout('/api/dev/table/column/modify', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableName, columnDefinition })
+    }, 15000).then(safeJson)
+}
+
+export function dropColumn(tableName, columnName) {
+    return fetchWithTimeout('/api/dev/table/column/drop', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableName, columnName })
+    }, 15000).then(safeJson)
+}
+
+export function executeSQL(sql, tableName) {
+    return fetchWithTimeout('/api/dev/table/execute-sql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sql, tableName })
+    }, 60000).then(safeJson)
+}
+
+export function batchImport(params) {
+    return fetchWithTimeout('/api/dev/table/batch-import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params)
+    }, 120000).then(safeJson)
+}
