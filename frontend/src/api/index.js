@@ -103,8 +103,8 @@ export function updateRecord(data) {
     }, 30000).then(safeJson)
 }
 
-export function deleteRecord(url) {
-    return fetchWithTimeout('/api/record/delete?url=' + encodeURIComponent(url), {
+export function deleteRecord(hash) {
+    return fetchWithTimeout('/api/record/delete?hash=' + encodeURIComponent(hash), {
         method: 'DELETE'
     }, 30000).then(safeJson)
 }
@@ -254,11 +254,11 @@ export function adminRecordStats() {
     return fetchWithTimeout('/api/admin/record/stats', {}, 15000).then(safeJson)
 }
 
-export function adminBatchDelete(urls) {
+export function adminBatchDelete(hashes) {
     return fetchWithTimeout('/api/admin/record/batch-delete', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ urls })
+        body: JSON.stringify({ hashes })
     }, 30000).then(safeJson)
 }
 
