@@ -1470,7 +1470,11 @@ async function renderQR(url) {
 }
 
 watch(downloadUrl, (val) => { renderQR(val) })
-
+watch(devActiveTab, (val) => {
+  if (val === 'test' && downloadUrl.value) {
+    nextTick(() => renderQR(downloadUrl.value))
+  }
+})
 function fillAttrBundleIds(bid) {
   for (const type of ATTR_TYPES) {
     attrStates[type].bundleId = bid
