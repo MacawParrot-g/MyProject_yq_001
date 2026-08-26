@@ -589,7 +589,7 @@ onUnmounted(() => { cancelRetestTimer() })
               </span>
             </td>
             <td class="dv-action-cell">
-              <button class="dv-btn-retest" @click="openRetest(item)">重新测试</button>
+   <!--           <button class="dv-btn-retest" @click="openRetest(item)">重新测试</button> -->
 <!--              <button class="dv-btn-edit" @click="startEdit(item)">编辑</button>-->
 <!--              <button class="dv-btn-del" @click="handleDelete(item)">删除</button>-->
             </td>
