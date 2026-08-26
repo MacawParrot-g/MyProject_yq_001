@@ -1,1 +1,76 @@
-
+pipeline {
+    agent any
+    environment {
+        BACKEND_IMAGE = "my-registry/myapp-backend"
+        FRONTEND_IMAGE = "my-registry/myapp-frontend"
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        K8S_YAML_DIR = "k8s"
+        KUBECTL = "minikube kubectl --"
+    }
+    stages {
+        stage('拉取代码') {
+            steps {
+                checkout scm
+            }
+        }
+        stage('构建后端镜像') {
+            steps {
+                dir('k8s/backend') {
+                    script {
+                        def fullImageName = "${BACKEND_IMAGE}:${IMAGE_TAG}"
+                        echo "构建后端 Docker 镜像: ${fullImageName}"
+                        sh "docker build -t ${fullImageName} ."
+                        sh "minikube image load ${fullImageName}"
+                        
+                        // 更新 backend.yml 中的镜像
+                        sh "sed -i 's|image: ${BACKEND_IMAGE}:latest|image: ${fullImageName}|g' ../../${K8S_YAML_DIR}/backend.yml"
+                    }
+                }
+            }
+        }
+        stage('构建前端镜像') {
+            steps {
+                dir('k8s/frontend') {
+                    script {
+                        def fullImageName = "${FRONTEND_IMAGE}:${IMAGE_TAG}"
+                        echo "构建前端 Docker 镜像: ${fullImageName}"
+                        sh "docker build -t ${fullImageName} ."
+                        sh "minikube image load ${fullImageName}"
+                        
+                        // 更新 frontend.yml 中的镜像
+                        sh "sed -i 's|image: ${FRONTEND_IMAGE}:latest|image: ${fullImageName}|g' ../../${K8S_YAML_DIR}/frontend.yml"
+                    }
+                }
+            }
+        }
+        stage('部署到 K8s') {
+            steps {
+                script {
+                    echo "开始应用 K8s 配置..."
+                    // 按顺序应用，确保服务先于依赖它的 Deployment 创建
+                    sh "${KUBECTL} apply -f ${K8S_YAML_DIR}/mysql.yml"
+                    sh "${KUBECTL} apply -f ${K8S_YAML_DIR}/redis.yml"
+                    sh "${KUBECTL} apply -f ${K8S_YAML_DIR}/backend.yml"
+                    sh "${KUBECTL} apply -f ${K8S_YAML_DIR}/frontend.yml"
+                    sh "${KUBECTL} apply -f ${K8S_YAML_DIR}/nginx.yml"
+                    
+                    echo "滚动重启部署以应用新镜像..."
+                    sh "${KUBECTL} rollout restart deployment/backend"
+                    sh "${KUBECTL} rollout restart deployment/frontend"
+                    sh "${KUBECTL} rollout restart deployment/nginx"
+                }
+            }
+        }
+    }
+    post {
+        always {
+            cleanWs()
+        }
+        failure {
+            echo '部署失败！'
+        }
+        success {
+            echo '部署成功！访问地址: http://<你的minikube-ip>:30080'
+        }
+    }
+}
