@@ -1,25 +1,26 @@
-# k8s/rabbitmq.yml
 apiVersion: v1
 kind: Service
 metadata:
   name: rabbitmq
-  labels:
-    app: rabbitmq
 spec:
   ports:
-    - port: 5672
-      name: amqp
-    - port: 15672
-      name: management
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+      nodePort: 30672 # 测试服端口：30672
+    - name: management
+      port: 15672
+      targetPort: 15672
+      nodePort: 31672 # 管理后台端口：31672
   selector:
     app: rabbitmq
+  type: NodePort
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: rabbitmq
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: rabbitmq
@@ -30,12 +31,12 @@ spec:
     spec:
       containers:
       - name: rabbitmq
-        image: rabbitmq:3-management-alpine # 带有Web管理面板的镜像
-        ports:
-        - containerPort: 5672
-        - containerPort: 15672
+        image: rabbitmq:3-management-alpine
         env:
         - name: RABBITMQ_DEFAULT_USER
           value: "admin"
         - name: RABBITMQ_DEFAULT_PASS
           value: "91781369"
+        ports:
+        - containerPort: 5672
+        - containerPort: 15672
