@@ -2,14 +2,14 @@ apiVersion: v1
 kind: Service
 metadata:
   name: redis
-  labels:
-    app: redis
 spec:
   ports:
-    - port: 6380
-      targetPort: 6380
+    - port: 6379
+      targetPort: 6379
+      nodePort: 30379 # 测试服端口：30379
   selector:
     app: redis
+  type: NodePort
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -25,21 +25,7 @@ spec:
         app: redis
     spec:
       containers:
-        - name: redis
-          image: redis:7-alpine
-          command: ["redis-server", "--appendonly", "yes", "--port", "6380"]
-          ports:
-            - containerPort: 6380
-          volumeMounts:
-            - name: redis-data
-              mountPath: /data
-            - name: redis-conf
-              mountPath: /usr/local/etc/redis/redis.conf
-              subPath: redis.conf
-          args: ["/usr/local/etc/redis/redis.conf"]
-      volumes:
-        - name: redis-data
-          emptyDir: {}
-        - name: redis-conf
-          configMap:
-            name: redis-conf
+      - name: redis
+        image: redis:alpine
+        ports:
+        - containerPort: 6379
