@@ -1,76 +1,107 @@
 pipeline {
     agent any
+    
     environment {
-        BACKEND_IMAGE = "my-registry/myapp-backend"
-        FRONTEND_IMAGE = "my-registry/myapp-frontend"
-        IMAGE_TAG = "${BUILD_NUMBER}"
-        K8S_YAML_DIR = "k8s"
-        KUBECTL = "minikube kubectl --"
+        // 定义项目名称和镜像仓库地址（本地）
+        PROJECT_NAME = "my-k8s-test"
+        REGISTRY = "localhost:5000" // 或者留空，直接使用本地 Docker Daemon
+        
+        // 定义镜像标签策略：使用时间戳或 Build ID，确保唯一性，方便回滚
+        IMAGE_TAG = "${BUILD_NUMBER}" 
     }
+
     stages {
-        stage('拉取代码') {
+        stage('环境检查与清理') {
             steps {
-                checkout scm
+                script {
+                    echo ">>> 开始清理旧镜像以释放空间..."
+                    // 1. 删除上一次构建的特定标签镜像（防止报错，加 || true）
+                    sh "docker rmi ${PROJECT_NAME}-backend:${IMAGE_TAG} || true"
+                    sh "docker rmi ${PROJECT_NAME}-frontend:${IMAGE_TAG} || true"
+                    
+                    // 2. 强制清理所有悬空镜像（None标签），释放磁盘空间
+                    sh "docker image prune -f"
+                }
             }
         }
+
         stage('构建后端镜像') {
             steps {
                 dir('k8s/backend') {
                     script {
-                        def fullImageName = "${BACKEND_IMAGE}:${IMAGE_TAG}"
-                        echo "构建后端 Docker 镜像: ${fullImageName}"
-                        sh "docker build -t ${fullImageName} ."
-                        sh "minikube image load ${fullImageName}"
-                        
-                        // 更新 backend.yml 中的镜像
-                        sh "sed -i 's|image: ${BACKEND_IMAGE}:latest|image: ${fullImageName}|g' ../../${K8S_YAML_DIR}/backend.yml"
+                        echo ">>> 构建后端镜像: ${PROJECT_NAME}-backend:${IMAGE_TAG}"
+                        sh "docker build -t ${PROJECT_NAME}-backend:${IMAGE_TAG} ."
                     }
                 }
             }
         }
+
         stage('构建前端镜像') {
             steps {
                 dir('k8s/frontend') {
                     script {
-                        def fullImageName = "${FRONTEND_IMAGE}:${IMAGE_TAG}"
-                        echo "构建前端 Docker 镜像: ${fullImageName}"
-                        sh "docker build -t ${fullImageName} ."
-                        sh "minikube image load ${fullImageName}"
-                        
-                        // 更新 frontend.yml 中的镜像
-                        sh "sed -i 's|image: ${FRONTEND_IMAGE}:latest|image: ${fullImageName}|g' ../../${K8S_YAML_DIR}/frontend.yml"
+                        echo ">>> 构建前端镜像: ${PROJECT_NAME}-frontend:${IMAGE_TAG}"
+                        sh "docker build -t ${PROJECT_NAME}-frontend:${IMAGE_TAG} ."
                     }
                 }
             }
         }
-        stage('部署到 K8s') {
+
+        stage('部署中间件 (MySQL/Redis/RabbitMQ)') {
             steps {
                 script {
-                    echo "开始应用 K8s 配置..."
-                    // 按顺序应用，确保服务先于依赖它的 Deployment 创建
-                    sh "${KUBECTL} apply -f ${K8S_YAML_DIR}/mysql.yml"
-                    sh "${KUBECTL} apply -f ${K8S_YAML_DIR}/redis.yml"
-                    sh "${KUBECTL} apply -f ${K8S_YAML_DIR}/backend.yml"
-                    sh "${KUBECTL} apply -f ${K8S_YAML_DIR}/frontend.yml"
-                    sh "${KUBECTL} apply -f ${K8S_YAML_DIR}/nginx.yml"
+                    echo ">>> 部署基础中间件..."
+                    // 中间件通常不需要频繁重新构建，直接应用 YAML 即可
+                    // 如果数据卷已存在，K8s 会保留数据
+                    sh "kubectl apply -f k8s/mysql.yml"
+                    sh "kubectl apply -f k8s/redis.yml"
+                    sh "kubectl apply -f k8s/rabbitmq.yml"
                     
-                    echo "滚动重启部署以应用新镜像..."
-                    sh "${KUBECTL} rollout restart deployment/backend"
-                    sh "${KUBECTL} rollout restart deployment/frontend"
-                    sh "${KUBECTL} rollout restart deployment/nginx"
+                    // 等待中间件就绪（简单 sleep 或 check）
+                    sh "sleep 10" 
+                }
+            }
+        }
+
+        stage('部署后端服务') {
+            steps {
+                script {
+                    // 替换 yml 中的镜像标签为当前构建版本号
+                    sh "sed -i 's|image: .*-backend:.*|image: ${PROJECT_NAME}-backend:${IMAGE_TAG}|g' k8s/backend.yml"
+                    sh "kubectl apply -f k8s/backend.yml"
+                }
+            }
+        }
+
+        stage('部署前端与 Nginx') {
+            steps {
+                script {
+                    // 替换前端镜像标签
+                    sh "sed -i 's|image: .*-frontend:.*|image: ${PROJECT_NAME}-frontend:${IMAGE_TAG}|g' k8s/frontend.yml"
+                    
+                    // 更新 Nginx 配置（ConfigMap）
+                    sh "kubectl create configmap nginx-conf --from-file=k8s/nginx/conf.d/default.conf --dry-run=client -o yaml | kubectl apply -f -"
+                    
+                    // 应用 Nginx 部署
+                    sh "kubectl apply -f k8s/nginx.yml"
                 }
             }
         }
     }
+
     post {
         always {
-            cleanWs()
-        }
-        failure {
-            echo '部署失败！'
+            script {
+                echo ">>> 流水线结束，再次清理构建缓存..."
+                // 清理构建过程中产生的临时缓存
+                sh "docker builder prune -f"
+            }
         }
         success {
-            echo '部署成功！访问地址: http://<你的minikube-ip>:30080'
+            echo ">>> 测试环境部署成功！请访问测试地址。"
+        }
+        failure {
+            echo ">>> 部署失败，请检查日志。"
         }
     }
 }
