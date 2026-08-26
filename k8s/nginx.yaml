@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.24-alpine
+        ports:
+        - containerPort: 80
+        # 如果你需要挂载自定义的 nginx.conf，需要在这里加 volumeMounts
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-external
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 19303       # 对外暴露的宿主机端口
+      targetPort: 80    # 容器内部端口
+      nodePort: 19303   # Minikube 映射到宿主机的端口
+  type: NodePort
