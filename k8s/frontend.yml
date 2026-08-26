@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  # 前端服务只需要在集群内部被 Nginx 访问，所以用 ClusterIP
+  type: ClusterIP
+  ports:
+    - port: 19302
+      targetPort: 19302
+  selector:
+    app: frontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          # Jenkins 构建时会替换这个镜像标签
+          image: my-registry/myapp-frontend:latest
+          ports:
+            - containerPort: 80
