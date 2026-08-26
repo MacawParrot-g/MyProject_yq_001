@@ -8,8 +8,8 @@ spec:
   type: NodePort
   ports:
     - port: 19203
-      targetPort: 19203
-      nodePort: 30080 # 可通过 <NodeIP>:30080 访问
+      targetPort: 19302
+      nodePort: 31860 # 可通过 <NodeIP>:31860 访问
   selector:
     app: nginx
 ---
