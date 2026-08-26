@@ -2,14 +2,14 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mysql
-  labels:
-    app: mysql
 spec:
   ports:
-    - port: 3305
-      targetPort: 3305
+    - port: 3306
+      targetPort: 3306
+      nodePort: 30306 # 测试服端口：30306
   selector:
     app: mysql
+  type: NodePort
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -25,34 +25,19 @@ spec:
         app: mysql
     spec:
       containers:
-        - name: mysql
-          image: mysql:8.0
-          env:
-            - name: MYSQL_ROOT_PASSWORD
-              value: "12345678"
-            - name: MYSQL_DATABASE
-              value: "test_data"
-            - name: MYSQL_USER
-              value: "remote_user"
-            - name: MYSQL_PASSWORD
-              value: "12345678"
-            - name: TZ
-              value: "Asia/Shanghai"
-          ports:
-            - containerPort: 3305
-          volumeMounts:
-            - name: mysql-data
-              mountPath: /var/lib/mysql
-            - name: mysql-init
-              mountPath: /docker-entrypoint-initdb.d
-            - name: mysql-conf
-              mountPath: /etc/mysql/conf.d
-      volumes:
+      - name: mysql
+        image: mysql:5.7
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "12345678" # 请修改为你的测试密码
+        - name: MYSQL_DATABASE
+          value: "test_data"
+        ports:
+        - containerPort: 3306
+        volumeMounts:
         - name: mysql-data
-          emptyDir: {}
-        - name: mysql-init
-          configMap:
-            name: mysql-init-sql
-        - name: mysql-conf
-          configMap:
-            name: mysql-conf
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-data
+        hostPath:
+          path: /data/k8s-test/mysql # 宿主机挂载点
