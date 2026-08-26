@@ -72,9 +72,9 @@
 
   <div class="login-overlay" v-if="!loggedIn">
     <div class="login-card">
-      <div class="login-logo">🎮</div>
-      <h1>我看行</h1>
-      <div class="login-subtitle">游戏测试数据可视化 & 自动入库系统 3.0</div>
+      <img src="/icon.png" alt="公司Logo" class="login-logo" />
+      <h1>"我看行"游戏测试数据管理系统</h1>
+      <div class="login-subtitle">请登录后使用</div>
       <div class="login-form">
         <div class="login-field">
           <label>账号</label>
@@ -89,7 +89,7 @@
         </button>
         <div v-if="loginError" class="login-error">{{ loginError }}</div>
       </div>
-      <div class="login-footer">深圳市慧动创想科技有限公司 · 蓝黄金刚鹦鹉</div>
+      <div class="login-footer">由深圳市慧动创想科技有限公司 · 蓝黄金刚鹦鹉开发</div>
     </div>
   </div>
 </template>
@@ -598,8 +598,12 @@ body {
   width: 90%;
 }
 .login-logo {
-  font-size: 48px;
-  margin-bottom: 12px;
+  width: 180px;
+  height: 90px;
+  object-fit: contain;
+  margin: 0 auto 12px auto;
+  display: block;
+  border-radius: 16px;
 }
 .login-card h1 {
   font-size: 24px;
