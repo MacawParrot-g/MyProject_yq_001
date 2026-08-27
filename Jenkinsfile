@@ -112,10 +112,17 @@ pipeline {
                     """
                 }
 
-                echo '>>> 将前端配置注入到 Nginx 容器中...'
+                 echo '>>> 将前端配置注入到 Nginx 容器中...'
                 sh """
                     sleep 3
+                    
+                    # 【终极杀招】在复制新文件前，强制清空 Nginx 容器里的旧前端文件！
+                    # 这样就不会有任何历史遗留垃圾了！
+                    docker exec cicd-nginx rm -rf /usr/share/nginx/html/dist/*
+                    
+                    # 然后再把最新的前端文件复制进去
                     docker cp nginx/html/dist/. cicd-nginx:/usr/share/nginx/html/dist/
+                    
                     docker cp nginx/conf.d/. cicd-nginx:/etc/nginx/conf.d/
                     docker exec cicd-nginx chown -R 101:101 /usr/share/nginx/html
                     docker exec cicd-nginx nginx -s reload
