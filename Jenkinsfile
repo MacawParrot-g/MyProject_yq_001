@@ -86,8 +86,10 @@ pipeline {
             cp -rf backend ${DEPLOY_DIR}/
             
             # 复制前端构建产物
-            mkdir -p ${DEPLOY_DIR}/nginx/html
-            cp -rf nginx/html/dist ${DEPLOY_DIR}/nginx/html/
+            mkdir -p ${DEPLOY_DIR}/nginx/html/dist
+            # 尝试清理旧文件（即使没权限也没关系，Nginx 容器会兜底清理）
+            rm -rf ${DEPLOY_DIR}/nginx/html/dist/* 2>/dev/null || true
+            cp -rf nginx/html/dist/* ${DEPLOY_DIR}/nginx/html/dist/
             cp -rf nginx/conf.d ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
             cp -f nginx/nginx.conf ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
             
