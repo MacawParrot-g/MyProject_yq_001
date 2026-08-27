@@ -106,8 +106,9 @@ pipeline {
 
         echo '>>> 启动服务...'
         dir("${DEPLOY_DIR}") {
-            sh """
-    docker compose -f ${COMPOSE_FILE} up -d --build --force-recreate --no-cache
+           sh """
+    docker compose -f ${COMPOSE_FILE} build --no-cache
+    docker compose -f ${COMPOSE_FILE} up -d --force-recreate
 """
         }
     }
