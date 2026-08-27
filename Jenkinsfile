@@ -17,19 +17,20 @@ pipeline {
     }
 
     stages {
-        stage('1. 拉取代码') {
+                stage('1. 拉取代码') {
             steps {
                 echo '>>> 【强制清洗】彻底清空 Jenkins 工作区，防止旧代码污染...'
                 // 删除当前工作区下的所有文件和隐藏文件（除了 .git 目录，保留 git 配置以加快后续拉取）
                 sh 'rm -rf * .[!.]* ..?*'
                 
-                echo '>>> 正在从 GitHub 拉取最新代码...'
+                echo '>>> 正在从 GitHub 强制拉取最新代码...'
                 checkout scm
                 
-                echo '>>> 验证拉取的代码是否为最新...'
+                echo '>>> 【关键验证】打印当前拉取的代码版本，确认是否为最新...'
                 sh 'git log -1'
             }
         }
+        
 
                stage('2. 后端构建与镜像打包') {
             steps {
