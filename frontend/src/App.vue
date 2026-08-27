@@ -73,7 +73,7 @@
   <div class="login-overlay" v-if="!loggedIn">
     <div class="login-card">
       <img src="/icon.png" alt="公司Logo" class="login-logo" />
-      <h1>"我看行"游戏测试数据管理系统</h1>
+      <h1>游戏测试数据管理系统</h1>
       <div class="login-subtitle">请登录后使用</div>
       <div class="login-form">
         <div class="login-field">
