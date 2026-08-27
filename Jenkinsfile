@@ -68,28 +68,28 @@ pipeline {
                 sh """
                     # 1. 确保所有必要的目录存在（如果不存在就创建，存在就保留）
                     mkdir -p ${DEPLOY_DIR}/cicd-data/{mysql,redis,rabbitmq,export,nginx-logs}
-                    mkdir -p ${DEPLOY_DIR}/mysql/initsql
-                    mkdir -p ${DEPLOY_DIR}/nginx/html/dist
-                    
-                    # 2. 复制必要的文件（cp -rf 会自动覆盖同名文件，绝对安全）
-                    cp -f docker-compose.cicd.yml ${DEPLOY_DIR}/
-                    cp -f .env ${DEPLOY_DIR}/ 2>/dev/null || true
-                    
-                    # 复制后端
-                    cp -rf backend ${DEPLOY_DIR}/
-                    
-                    # 复制前端构建产物（注意：目标路径末尾不要加 /*）
-                    cp -rf nginx/html/dist/* ${DEPLOY_DIR}/nginx/html/dist/
-                    cp -rf nginx/conf.d ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
-                    cp -f nginx/nginx.conf ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
-                    
-                    # 复制数据库和缓存配置
-                    cp -rf mysql ${DEPLOY_DIR}/ 2>/dev/null || true
-                    cp -rf redis ${DEPLOY_DIR}/ 2>/dev/null || true
-                    cp -f data/* ${DEPLOY_DIR}/data/ 2>/dev/null || true
-                    
-                    # 3. 验证前端产物是否真的存在
-                    ls -lh ${DEPLOY_DIR}/nginx/html/dist/
+            mkdir -p ${DEPLOY_DIR}/mysql/initsql
+            mkdir -p ${DEPLOY_DIR}/nginx/html/dist
+            
+            # 2. 复制必要的文件（cp -rf 会自动覆盖同名文件，绝对安全）
+            cp -f docker-compose.cicd.yml ${DEPLOY_DIR}/
+            cp -f .env ${DEPLOY_DIR}/ 2>/dev/null || true
+            
+            # 复制后端
+            cp -rf backend ${DEPLOY_DIR}/
+            
+            # 复制前端构建产物（注意：目标路径末尾绝对不要加 /*）
+            cp -rf nginx/html/dist/* ${DEPLOY_DIR}/nginx/html/dist/
+            cp -rf nginx/conf.d ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
+            cp -f nginx/nginx.conf ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
+            
+            # 复制数据库和缓存配置
+            cp -rf mysql ${DEPLOY_DIR}/ 2>/dev/null || true
+            cp -rf redis ${DEPLOY_DIR}/ 2>/dev/null || true
+            cp -f data/* ${DEPLOY_DIR}/data/ 2>/dev/null || true
+            
+            # 3. 验证前端产物是否真的存在
+            ls -lh ${DEPLOY_DIR}/nginx/html/dist/
                 """
 
                 echo '>>> 启动服务...'
