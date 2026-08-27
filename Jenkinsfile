@@ -93,12 +93,14 @@ pipeline {
                     sh """
                         rm -rf cicd-data/nginx-logs/*
                         
-                        # 【终极杀招】在启动前，强制删除宿主机上的旧构建产物！
-                        # 这样 Docker Compose 就会发现文件变了，被迫重新构建！
-                        rm -rf backend/target || true
+                        # 【终极杀招】在启动前，强制停止并删除旧的后端容器！
+                        # 不管它是什么状态，直接物理消灭，绝不留情！
+                        docker stop cicd-backend || true
+                        docker rm cicd-backend || true
                         
-                        # 启动容器，绝对不加 build 参数！
-                        docker compose -f ${COMPOSE_FILE} up -d --force-recreate
+                        # 此时本地只有最新构建的 myapp-backend:latest
+                        # 启动容器，Docker 将被迫使用最新的镜像！
+                        docker compose -f ${COMPOSE_FILE} up -d
                     """
                 }
 
