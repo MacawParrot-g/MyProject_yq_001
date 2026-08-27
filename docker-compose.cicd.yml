@@ -64,9 +64,10 @@ services:
     ports:
     # 将宿主机端口从 8080 改为 8082
     - "8082:8082"
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: myapp-backend:latest
+#    build:
+#      context: ./backend
+#      dockerfile: Dockerfile
     container_name: cicd-backend
     restart: always
     volumes:
