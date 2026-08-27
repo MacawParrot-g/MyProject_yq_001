@@ -362,3 +362,25 @@ export function saveAppGrade(url, grade, recorder, remark) {
         body: JSON.stringify({url, grade, recorder, remark})
     }, 15000).then(safeJson)
 }
+
+export function gradeManageSearch(params) {
+    return fetchWithTimeout('/api/grade/manage/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params)
+    }, 30000).then(safeJson)
+}
+
+export function gradeManageDelete(url) {
+    return fetchWithTimeout('/api/grade/manage/delete?url=' + encodeURIComponent(url), {
+        method: 'DELETE'
+    }, 15000).then(safeJson)
+}
+
+export function gradeManageUpdate(url, grade, remark) {
+    return fetchWithTimeout('/api/grade/manage/update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, grade, remark })
+    }, 15000).then(safeJson)
+}
