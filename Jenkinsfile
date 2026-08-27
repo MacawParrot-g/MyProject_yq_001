@@ -120,8 +120,6 @@ pipeline {
         always {
             echo '>>> 【构建后清理】清理本地构建产物，避免磁盘膨胀...'
             // 删除本次构建生成的镜像，释放空间（保留基础镜像）
-            sh "docker rmi -f ${BACKEND_IMAGE} || true"
-            
             echo '清理 Jenkins 工作区...'
             cleanWs()
         }
