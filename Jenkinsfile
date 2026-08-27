@@ -28,17 +28,17 @@ pipeline {
             steps {
                 dir('backend') {
                     echo '>>> 开始清理并构建后端...'
-                    // 强制更新快照依赖并打包
                     sh 'mvn clean package -DskipTests -U'
 
                     echo '>>> 验证 JAR 包...'
                     sh "ls -lh target/${JAR_NAME}"
 
-                    echo '>>> 重建后端 Docker 镜像...'
-                    sh """
-                        docker rmi -f ${BACKEND_IMAGE} || true
-                        docker build -t ${BACKEND_IMAGE} .
-                    """
+                    echo '>>> 【清理旧镜像】发现旧镜像立刻销毁...'
+                    // 强制删除旧镜像，如果不存在也不会报错终止流水线
+                    sh "docker rmi -f ${BACKEND_IMAGE} || true"
+
+                    echo '>>> 【重新构建】强制不使用缓存，从头构建新镜像...'
+                    sh "docker build --no-cache -t ${BACKEND_IMAGE} ."
                 }
             }
         }
@@ -47,30 +47,22 @@ pipeline {
             steps {
                 dir('frontend') {
                     echo '>>> 开始安装前端依赖并构建...'
-                    
-                    // 1. 安装依赖
                     sh 'npm install'
-                    
-                    // 2. 执行构建
-                    // 注意：这里不需要指定输出目录，因为 vite.config.js 里已经配好了 outDir: '../nginx/html/dist'
                     sh 'npm run build'
-
                     echo '>>> 验证构建产物是否存在...'
-                    // 检查产物是否真的生成了
                     sh 'ls -lh ../nginx/html/dist/'
                 }
             }
         }
 
-         stage('4. 本地部署 (沙箱环境)') {
+        stage('4. 本地部署 (沙箱环境)') {
             steps {
                 echo '>>> 准备部署目录...'
                 sh """
-                    # 1. 确保基础目录存在
                     mkdir -p ${DEPLOY_DIR}/cicd-data/{mysql,redis,rabbitmq,export,nginx-logs}
                     mkdir -p ${DEPLOY_DIR}/mysql/initsql
                     
-                    # 2. 复制必要的配置文件（绝对不要往 backend/target 和 nginx/html/dist 里复制任何东西！）
+                    # 只复制配置文件（放弃在宿主机复制业务代码，防止挂载吞噬）
                     cp -f docker-compose.cicd.yml ${DEPLOY_DIR}/
                     cp -f .env ${DEPLOY_DIR}/ 2>/dev/null || true
                     cp -rf nginx/conf.d ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
@@ -80,15 +72,16 @@ pipeline {
                     cp -f data/* ${DEPLOY_DIR}/data/ 2>/dev/null || true
                 """
 
-                echo '>>> 启动基础服务...'
+                echo '>>> 启动/重建所有服务...'
                 dir("${DEPLOY_DIR}") {
                     sh """
                         rm -rf cicd-data/nginx-logs/*
+                        # 后端镜像已在 Stage 2 强制重建，这里直接拉起新容器
                         docker compose -f ${COMPOSE_FILE} up -d --force-recreate
                     """
                 }
 
-                echo '>>> 将前端代码注入到 Nginx 容器中...'
+                echo '>>> 将前端配置注入到 Nginx 容器中...'
                 sh """
                     sleep 3
                     docker cp nginx/html/dist/. cicd-nginx:/usr/share/nginx/html/dist/
@@ -97,33 +90,17 @@ pipeline {
                     docker exec cicd-nginx nginx -s reload
                 """
                 
-                echo '已经将前端部分打包进nginx'
-
-                echo '>>> 将后端代码注入到 Backend 容器中...'
-                sh """
-                    sleep 3
-                    # 直接将后端产物复制到 Backend 容器内部！彻底绕过宿主机的挂载吞噬！
-                    docker cp backend/. cicd-backend:/app/
-                    
-                    # 修复容器内的文件权限，防止后端启动报权限错误
-                    docker exec cicd-backend chown -R root:root /app
-                """
-                
-                echo '已经将后端部分打包进容器'
-
-                echo '>>> 重启后端服务使新代码生效...'
-                dir("${DEPLOY_DIR}") {
-                    sh """
-                        # 重启后端容器，让它加载刚注入的新 JAR 包
-                        docker compose -f ${COMPOSE_FILE} restart backend
-                    """
-                }
+                echo '✅ 前后端部署完成！'
             }
-        }               
+        }
     }
 
     post {
         always {
+            echo '>>> 【构建后清理】清理本地构建产物，避免磁盘膨胀...'
+            // 删除本次构建生成的镜像，释放空间（保留基础镜像）
+            sh "docker rmi -f ${BACKEND_IMAGE} || true"
+            
             echo '清理 Jenkins 工作区...'
             cleanWs()
         }
@@ -131,7 +108,6 @@ pipeline {
             echo '❌ 流水线执行失败，请检查上方日志！'
         }
         success {
-            echo '✅ 部署成功！前端已更新，后端已重启。'
+            echo '✅ 部署成功！前端已更新，后端已重建。'
         }
     }
-}
