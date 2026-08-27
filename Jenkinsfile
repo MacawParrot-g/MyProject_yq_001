@@ -24,9 +24,13 @@ pipeline {
             }
         }
 
-        stage('2. 后端构建与镜像打包') {
+               stage('2. 后端构建与镜像打包') {
             steps {
                 dir('backend') {
+                    echo '>>> 【强制清理】删除旧的构建产物...'
+                    // 彻底清空 target 目录，确保没有任何旧文件残留
+                    sh 'rm -rf target/*'
+                    
                     echo '>>> 开始清理并构建后端...'
                     sh 'mvn clean package -DskipTests -U'
 
@@ -34,7 +38,6 @@ pipeline {
                     sh "ls -lh target/${JAR_NAME}"
 
                     echo '>>> 【清理旧镜像】发现旧镜像立刻销毁...'
-                    // 强制删除旧镜像，如果不存在也不会报错终止流水线
                     sh "docker rmi -f ${BACKEND_IMAGE} || true"
 
                     echo '>>> 【重新构建】强制不使用缓存，从头构建新镜像...'
@@ -42,7 +45,6 @@ pipeline {
                 }
             }
         }
-
         stage('3. 前端构建 (Vite)') {
             steps {
                 dir('frontend') {
