@@ -85,7 +85,7 @@ pipeline {
             # 复制后端
             cp -rf backend ${DEPLOY_DIR}/
             
-            # 复制前端构建产物
+             # 复制前端构建产物
             mkdir -p ${DEPLOY_DIR}/nginx/html/dist
             # 尝试清理旧文件（即使没权限也没关系，Nginx 容器会兜底清理）
             rm -rf ${DEPLOY_DIR}/nginx/html/dist/* 2>/dev/null || true
