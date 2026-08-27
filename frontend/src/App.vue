@@ -105,6 +105,8 @@ import NewbieGuide from "./components/NewbieGuide.vue";
 import AdminPanel from "./components/AdminPanel.vue";
 import DevMode from "./components/DevMode.vue";
 import MonitorPanel from "./components/MonitorPanel.vue";
+import GradeManage from "./components/GradeManage.vue";
+
 
 const mode = ref('auto')
 const errorMsg = ref('')
@@ -127,7 +129,8 @@ const tabIcons = {
   qrcode: 'Q',
   export: 'E',
   data: 'D',
-  mon: 'M'
+  mon: 'M',
+  grade: 'G'
 }
 
 const componentMap = computed(() => {
@@ -143,11 +146,15 @@ const componentMap = computed(() => {
     map.data = AdminPanel
     map.develop = DevMode
     map.mon=MonitorPanel
+    map.grade = GradeManage
+    
   } else {
     map.data = DataVisitable
   }
   return map
 })
+
+
 const currentComponent = computed(() => componentMap.value[mode.value])
 
 const tabs = [
@@ -158,12 +165,13 @@ const tabs = [
   { key: 'export', label: '数据导出' },
   { key: 'data', label: '数据看板' },
   { key: 'mon', label: '监控面板' },
+  { key: 'grade', label: '评级管理' },
 ]
 
 const filteredTabs = computed(() => {
   let result = [...tabs]
   if (accType.value !== 'DEVELOPER') {
-    result = result.filter(t => t.key !== 'develop' && t.key !== 'mon')
+    result = result.filter(t => t.key !== 'develop' && t.key !== 'mon' && t.key !== 'grade')
   }
   if (accType.value === 'ADMIN') {
     result = result.map(t => {
