@@ -107,6 +107,7 @@ pipeline {
         echo '>>> 启动服务...'
         dir("${DEPLOY_DIR}") {
            sh """
+           rm -rf cicd-data/nginx-logs/*
     docker compose -f ${COMPOSE_FILE} build --no-cache
     docker compose -f ${COMPOSE_FILE} up -d --force-recreate
 """
