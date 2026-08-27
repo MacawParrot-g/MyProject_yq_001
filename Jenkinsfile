@@ -57,14 +57,14 @@ pipeline {
             }
         }
 
-        stage('4. 本地部署 (沙箱环境)') {
+                stage('4. 本地部署 (沙箱环境)') {
             steps {
                 echo '>>> 准备部署目录...'
                 sh """
                     mkdir -p ${DEPLOY_DIR}/cicd-data/{mysql,redis,rabbitmq,export,nginx-logs}
                     mkdir -p ${DEPLOY_DIR}/mysql/initsql
                     
-                    # 只复制配置文件（放弃在宿主机复制业务代码，防止挂载吞噬）
+                    # 只复制配置文件
                     cp -f docker-compose.cicd.yml ${DEPLOY_DIR}/
                     cp -f .env ${DEPLOY_DIR}/ 2>/dev/null || true
                     cp -rf nginx/conf.d ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
