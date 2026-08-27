@@ -40,16 +40,18 @@ pipeline {
                 '''
             }
         }
-        
-
-                                      stage('2. 后端构建与镜像打包') {
+                stage('2. 后端构建与镜像打包') {
             steps {
                 dir('backend') {
                     echo '>>> 【强制清理】删除旧的构建产物...'
-                    sh 'rm -rf target/*.jar'
+                    sh 'rm -rf target'
                     
                     echo '>>> 开始构建后端...'
                     sh 'mvn clean package -DskipTests -U'
+
+                    echo '>>> 【关键验证】检查 JAR 包是否真的生成成功了！'
+                    // 如果 JAR 包不存在，这里会直接报错并终止流水线，不再往下走！
+                    sh "ls -lh target/${JAR_NAME}"
 
                     echo '>>> 【物理超度】强制删除旧镜像...'
                     sh "docker rmi -f ${BACKEND_IMAGE} || true"
@@ -59,6 +61,8 @@ pipeline {
                 }
             }
         }
+
+                 
         stage('3. 前端构建 (Vite)') {
             steps {
                 dir('frontend') {
