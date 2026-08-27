@@ -66,9 +66,13 @@ pipeline {
         stage('3. 前端构建 (Vite)') {
             steps {
                 dir('frontend') {
+                    echo '>>> 【强制清理】删除旧的前端构建产物，防止文件堆积...'
+                    sh 'rm -rf ../nginx/html/dist/*'
+                    
                     echo '>>> 开始安装前端依赖并构建...'
                     sh 'npm install'
                     sh 'npm run build'
+                    
                     echo '>>> 验证构建产物是否存在...'
                     sh 'ls -lh ../nginx/html/dist/'
                 }
