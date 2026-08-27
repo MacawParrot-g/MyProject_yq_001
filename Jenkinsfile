@@ -87,7 +87,7 @@ pipeline {
             
              # 复制前端构建产物
             mkdir -p ${DEPLOY_DIR}/nginx/html/dist
-            cp -rf nginx/html/dist/* ${DEPLOY_DIR}/nginx/html/dist/*
+            cp -rf nginx/html/dist/* ${DEPLOY_DIR}/nginx/html/dist/
             cp -rf nginx/conf.d ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
             cp -f nginx/nginx.conf ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
             
