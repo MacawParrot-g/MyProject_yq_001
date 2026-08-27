@@ -42,7 +42,7 @@ pipeline {
         }
         
 
-                              stage('2. 后端构建与镜像打包') {
+                                      stage('2. 后端构建与镜像打包') {
             steps {
                 dir('backend') {
                     echo '>>> 【强制清理】删除旧的构建产物...'
@@ -51,12 +51,10 @@ pipeline {
                     echo '>>> 开始构建后端...'
                     sh 'mvn clean package -DskipTests -U'
 
-                    echo '>>> 【物理超度】强制删除旧镜像，绝不留情！'
-                    // 如果镜像不存在也不会报错终止流水线
+                    echo '>>> 【物理超度】强制删除旧镜像...'
                     sh "docker rmi -f ${BACKEND_IMAGE} || true"
 
-                    echo '>>> 【原生构建】使用 docker build 强制从头构建！'
-                    // 彻底抛弃 docker compose build，使用原生 docker build 并加上 --no-cache 和 --pull
+                    echo '>>> 【原生构建】强制从头构建...'
                     sh "docker build --no-cache --pull -t ${BACKEND_IMAGE} ."
                 }
             }
@@ -89,12 +87,17 @@ pipeline {
                     cp -rf redis ${DEPLOY_DIR}/ 2>/dev/null || true
                     cp -f data/* ${DEPLOY_DIR}/data/ 2>/dev/null || true
                 """
-
-                echo '>>> 启动/重建所有服务...'
+                
+                 echo '>>> 启动/重建所有服务...'
                 dir("${DEPLOY_DIR}") {
                     sh """
                         rm -rf cicd-data/nginx-logs/*
-                        # 后端镜像已在 Stage 2 强制重建，这里直接拉起新容器
+                        
+                        # 【终极杀招】在启动前，强制删除宿主机上的旧构建产物！
+                        # 这样 Docker Compose 就会发现文件变了，被迫重新构建！
+                        rm -rf backend/target || true
+                        
+                        # 启动容器，绝对不加 build 参数！
                         docker compose -f ${COMPOSE_FILE} up -d --force-recreate
                     """
                 }
