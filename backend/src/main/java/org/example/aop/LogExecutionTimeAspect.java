@@ -62,7 +62,7 @@ public class LogExecutionTimeAspect {
                     .append(" | 操作所属类: ").append(className)
                     .append(" | 方法: ").append(methodName)
                     .append(" | 状态: ").append(success ? "SUCCESS" : "FAILED")
-                    .append(" | 耗费时间(毫秒): ").append(duration).append("ms");
+                    .append(" | 耗时(毫秒): ").append(duration).append("ms");
 
             if (logExecutionTime.logParams()) {
                 Object[] args = joinPoint.getArgs();
