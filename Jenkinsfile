@@ -62,7 +62,7 @@ pipeline {
             }
         }
 
-                        stage('4. 本地部署 (沙箱环境)') {
+         stage('4. 本地部署 (沙箱环境)') {
             steps {
                 echo '>>> 准备部署目录...'
                 sh """
@@ -70,10 +70,9 @@ pipeline {
                     mkdir -p ${DEPLOY_DIR}/cicd-data/{mysql,redis,rabbitmq,export,nginx-logs}
                     mkdir -p ${DEPLOY_DIR}/mysql/initsql
                     
-                    # 2. 复制必要的配置文件（绝对不要往 nginx/html/dist 里复制任何东西！）
+                    # 2. 复制必要的配置文件（绝对不要往 backend/target 和 nginx/html/dist 里复制任何东西！）
                     cp -f docker-compose.cicd.yml ${DEPLOY_DIR}/
                     cp -f .env ${DEPLOY_DIR}/ 2>/dev/null || true
-                    cp -rf backend ${DEPLOY_DIR}/
                     cp -rf nginx/conf.d ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
                     cp -f nginx/nginx.conf ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
                     cp -rf mysql ${DEPLOY_DIR}/ 2>/dev/null || true
@@ -91,17 +90,36 @@ pipeline {
 
                 echo '>>> 将前端代码注入到 Nginx 容器中...'
                 sh """
-                    # 等待 Nginx 容器启动
                     sleep 3
-                    # 直接将前端产物复制到 Nginx 容器内部！彻底绕过宿主机的挂载吞噬！
                     docker cp nginx/html/dist/. cicd-nginx:/usr/share/nginx/html/dist/
-                    # 修复容器内的文件权限，防止 403
+                    docker cp nginx/conf.d/. cicd-nginx:/etc/nginx/conf.d/
                     docker exec cicd-nginx chown -R 101:101 /usr/share/nginx/html
+                    docker exec cicd-nginx nginx -s reload
                 """
-
+                
                 echo '已经将前端部分打包进nginx'
+
+                echo '>>> 将后端代码注入到 Backend 容器中...'
+                sh """
+                    sleep 3
+                    # 直接将后端产物复制到 Backend 容器内部！彻底绕过宿主机的挂载吞噬！
+                    docker cp backend/. cicd-backend:/app/
+                    
+                    # 修复容器内的文件权限，防止后端启动报权限错误
+                    docker exec cicd-backend chown -R root:root /app
+                """
+                
+                echo '已经将后端部分打包进容器'
+
+                echo '>>> 重启后端服务使新代码生效...'
+                dir("${DEPLOY_DIR}") {
+                    sh """
+                        # 重启后端容器，让它加载刚注入的新 JAR 包
+                        docker compose -f ${COMPOSE_FILE} restart backend
+                    """
+                }
             }
-        }
+        }               
     }
 
     post {
