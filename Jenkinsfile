@@ -112,13 +112,13 @@ pipeline {
                     """
                 }
 
-                 echo '>>> 将前端配置注入到 Nginx 容器中...'
+                                 echo '>>> 将前端配置注入到 Nginx 容器中...'
                 sh """
                     sleep 3
                     
-                    # 【终极杀招】在复制新文件前，强制清空 Nginx 容器里的旧前端文件！
-                    # 这样就不会有任何历史遗留垃圾了！
-                    docker exec cicd-nginx rm -rf /usr/share/nginx/html/dist/*
+                    # 【终极杀招】直接在宿主机上物理删除旧的前端文件！
+                    # 因为挂载是双向同步的，删了宿主机的，容器里也就没了！
+                    rm -rf ${DEPLOY_DIR}/nginx/html/dist/*
                     
                     # 然后再把最新的前端文件复制进去
                     docker cp nginx/html/dist/. cicd-nginx:/usr/share/nginx/html/dist/
