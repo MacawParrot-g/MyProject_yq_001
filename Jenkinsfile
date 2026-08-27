@@ -63,57 +63,47 @@ pipeline {
         }
 
         stage('4. 本地部署 (沙箱环境)') {
-    steps {
-        echo '>>> 准备部署目录...'
-        sh """
-            # 1. 确保目录存在
-            mkdir -p ${DEPLOY_DIR}
-            mkdir -p ${DEPLOY_DIR}/cicd-data/{mysql,redis,rabbitmq,export,nginx-logs}
-            mkdir -p ${DEPLOY_DIR}/mysql/initsql
-            
-            # 2. 清理旧代码（保留数据目录）
-            # 保留 cicd-data 目录，删除其他所有内容
-            cd ${DEPLOY_DIR}
-            find . -maxdepth 1 ! -name 'cicd-data' ! -name '.' -exec rm -rf {} + 2>/dev/null || true
-            cd -
-            
-            # 3. 复制必要的文件
-            # 复制 docker-compose 文件
-            cp -f docker-compose.cicd.yml ${DEPLOY_DIR}/
-            cp -f .env ${DEPLOY_DIR}/ 2>/dev/null || true
-            
-            # 复制后端
-            cp -rf backend ${DEPLOY_DIR}/
-            
-             # 复制前端构建产物
-            mkdir -p ${DEPLOY_DIR}/nginx/html/dist
-            cp -rf nginx/html/dist/* ${DEPLOY_DIR}/nginx/html/dist/
-            cp -rf nginx/conf.d ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
-            cp -f nginx/nginx.conf ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
-            
-            # 复制 MySQL 初始化脚本
-            cp -rf mysql ${DEPLOY_DIR}/ 2>/dev/null || true
-            
-            # 复制 Redis 配置
-            cp -rf redis ${DEPLOY_DIR}/ 2>/dev/null || true
-            
-            # 复制其他必要的文件
-            cp -f data/* ${DEPLOY_DIR}/data/ 2>/dev/null || true
-            
-            # 4. 验证产物
-            ls -lh ${DEPLOY_DIR}/nginx/html/dist/
-        """
+            steps {
+                echo '>>> 准备部署目录...'
+                sh """
+                    # 1. 确保所有必要的目录存在（如果不存在就创建，存在就保留）
+                    mkdir -p ${DEPLOY_DIR}/cicd-data/{mysql,redis,rabbitmq,export,nginx-logs}
+                    mkdir -p ${DEPLOY_DIR}/mysql/initsql
+                    mkdir -p ${DEPLOY_DIR}/nginx/html/dist
+                    
+                    # 2. 复制必要的文件（cp -rf 会自动覆盖同名文件，绝对安全）
+                    cp -f docker-compose.cicd.yml ${DEPLOY_DIR}/
+                    cp -f .env ${DEPLOY_DIR}/ 2>/dev/null || true
+                    
+                    # 复制后端
+                    cp -rf backend ${DEPLOY_DIR}/
+                    
+                    # 复制前端构建产物（注意：目标路径末尾不要加 /*）
+                    cp -rf nginx/html/dist/* ${DEPLOY_DIR}/nginx/html/dist/
+                    cp -rf nginx/conf.d ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
+                    cp -f nginx/nginx.conf ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
+                    
+                    # 复制数据库和缓存配置
+                    cp -rf mysql ${DEPLOY_DIR}/ 2>/dev/null || true
+                    cp -rf redis ${DEPLOY_DIR}/ 2>/dev/null || true
+                    cp -f data/* ${DEPLOY_DIR}/data/ 2>/dev/null || true
+                    
+                    # 3. 验证前端产物是否真的存在
+                    ls -lh ${DEPLOY_DIR}/nginx/html/dist/
+                """
 
-        echo '>>> 启动服务...'
-        dir("${DEPLOY_DIR}") {
-           sh """
-           rm -rf cicd-data/nginx-logs/*
-    docker compose -f ${COMPOSE_FILE} build --no-cache
-    docker compose -f ${COMPOSE_FILE} up -d --force-recreate
-"""
+                echo '>>> 启动服务...'
+                dir("${DEPLOY_DIR}") {
+                    sh """
+                        # 清理旧的 Nginx 日志缓存
+                        rm -rf cicd-data/nginx-logs/*
+                        # 强制不使用缓存构建镜像，并重建容器
+                        docker compose -f ${COMPOSE_FILE} build --no-cache
+                        docker compose -f ${COMPOSE_FILE} up -d --force-recreate
+                    """
+                }
+            }
         }
-    }
-}
     }
 
     post {
