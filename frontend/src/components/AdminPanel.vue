@@ -781,8 +781,8 @@ onUnmounted(() => {
                 <td class="uid-cell">{{ u.uid }}</td>
                 <td class="name-cell">{{ u.name }}</td>
                 <td>
-                  <span class="role-tag" :class="u.type === 'ADMIN' ? 'role-admin' : 'role-user'">
-                    {{ u.type === 'ADMIN' ? '管理员' : '用户' }}
+                  <span class="role-tag" :class="u.type === 'ADMIN' ? 'role-admin' : u.type === 'DEVELOPER' ? 'role-developer' : 'role-user'">
+                    {{ u.type === 'ADMIN' ? '管理员' : u.type === 'DEVELOPER' ? 'root账户' : '用户' }}
                   </span>
                 </td>
                 <td>
@@ -942,6 +942,12 @@ onUnmounted(() => {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+/* ... existing code ... */
+.role-tag { padding: 3px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; display: inline-block; }
+.role-admin { background: #fef3c7; color: #92400e; }
+.role-developer { background: #dcfce7; color: #166534; }
+.role-user { background: #e0e7ff; color: #3730a3; }
+/* ... existing code ... */
 .report-modal {
   background: #fff;
   border-radius: 20px;
