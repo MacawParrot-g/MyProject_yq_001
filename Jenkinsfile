@@ -42,20 +42,22 @@ pipeline {
         }
         
 
-                       stage('2. 后端构建与镜像打包') {
+                              stage('2. 后端构建与镜像打包') {
             steps {
                 dir('backend') {
-                    echo '>>> 【强制清理】删除旧的构建产物，防止 Docker 上下文污染...'
+                    echo '>>> 【强制清理】删除旧的构建产物...'
                     sh 'rm -rf target/*.jar'
                     
                     echo '>>> 开始构建后端...'
                     sh 'mvn clean package -DskipTests -U'
 
-                    echo '>>> 【清理旧镜像】...'
+                    echo '>>> 【物理超度】强制删除旧镜像，绝不留情！'
+                    // 如果镜像不存在也不会报错终止流水线
                     sh "docker rmi -f ${BACKEND_IMAGE} || true"
 
-                    echo '>>> 【重新构建】...'
-                    sh "docker build --no-cache -t ${BACKEND_IMAGE} ."
+                    echo '>>> 【原生构建】使用 docker build 强制从头构建！'
+                    // 彻底抛弃 docker compose build，使用原生 docker build 并加上 --no-cache 和 --pull
+                    sh "docker build --no-cache --pull -t ${BACKEND_IMAGE} ."
                 }
             }
         }
