@@ -8,7 +8,6 @@ import {
   fetchCountByRecorder,
   executeExportByDate,
   executeExportByHashes,
-  fetchUnexportedToday,
   fetchExportStatus,
   getExportDownloadUrl
 } from '../api/index.js'
@@ -21,8 +20,8 @@ const dateSearch = ref(getTodayDateStr())
 const list = ref([])
 const loading = ref(false)
 const queried = ref(false)
-const currentPage = ref(1)
 const pageSize = ref(15)
+const pageSizeInput = ref(15)
 const total = ref(0)
 const selectedHashes = ref([])
 const batchDeleting = ref(false)
@@ -33,8 +32,9 @@ const fileName = ref('')
 const resultMsg = ref('')
 const resultSuccess = ref(false)
 const currentUser = ref(localStorage.getItem('userName') || '')
-const todayUnexported = ref(null)
 const totalUnexported = ref(null)
+// Deleted:const todayUnexported = ref(null)
+// Deleted:const totalUnexported = ref(null)
 const todayUnexportedLoading = ref(false)
 let pollTimer = null
 
@@ -50,6 +50,17 @@ function formatDateForQuery(dateStr) {
   if (!dateStr) return ''
   const parts = dateStr.split('-')
   return parts[0] + '/' + parseInt(parts[1]) + '/' + parseInt(parts[2])
+}
+
+async function refreshTodayUnexported() {
+  todayUnexportedLoading.value = true
+  try {
+    const json = await fetchUnexportedByUser(currentUser.value)
+    if (json.success && json.data) {
+      totalUnexported.value = json.data.total || 0
+    }
+  } catch (e) { /* silent */ }
+  finally { todayUnexportedLoading.value = false }
 }
 
 async function fetchData(resetPage = false) {
@@ -89,24 +100,6 @@ function prevPage() {
   if (currentPage.value > 1) { currentPage.value--; fetchData() }
 }
 
-async function refreshTodayUnexported() {
-  todayUnexportedLoading.value = true
-  todayUnexported.value = null
-  try {
-    const [statsJson, todayJson] = await Promise.all([
-      fetchUnexportedByUser(currentUser.value),
-      fetchUnexportedToday(currentUser.value, formatDateForQuery(getTodayDateStr()))
-    ])
-    if (statsJson.success && statsJson.data) {
-      unexportedTotal.value = statsJson.data.total || 0
-    }
-    if (todayJson.success && todayJson.data) {
-      todayUnexported.value = todayJson.data.count
-    }
-  } catch (e) { /* silent */ }
-  finally { todayUnexportedLoading.value = false }
-}
-
 function nextPage() {
   if (currentPage.value < totalPages.value) { currentPage.value++; fetchData() }
 }
@@ -116,6 +109,15 @@ function toggleSelectAll(event) {
     selectedHashes.value = list.value.map(item => item.hash)
   } else {
     selectedHashes.value = []
+  }
+}
+
+function applyPageSize() {
+  const v = parseInt(pageSizeInput.value)
+  if (v > 0) {
+    pageSize.value = v
+    currentPage.value = 1
+    fetchData(true)
   }
 }
 
@@ -298,9 +300,6 @@ onUnmounted(() => { stopPolling() })
         <span class="total-unexported-badge" v-if="totalUnexported !== null" :class="{ 'badge-zero': totalUnexported === 0 }">
           总未导出: <strong>{{ totalUnexported }}</strong> 条
         </span>
-        <span class="today-unexported-badge" v-if="todayUnexported !== null" :class="{ 'badge-zero': todayUnexported === 0 }">
-          今日未导出: <strong>{{ todayUnexported }}</strong> 条
-        </span>
       </div>
       <div class="export-action-right" v-if="fileReady">
         <div class="download-section-inline">
@@ -382,6 +381,11 @@ onUnmounted(() => { stopPolling() })
       <button class="page-btn" :disabled="currentPage <= 1" @click="prevPage">‹ 上一页</button>
       <span class="page-info">第 {{ currentPage }} / {{ totalPages }} 页，共 {{ total }} 条</span>
       <button class="page-btn" :disabled="currentPage >= totalPages" @click="nextPage">下一页 ›</button>
+      <label class="page-size-label">
+        每页
+        <input class="page-size-input" type="number" v-model="pageSizeInput" @keydown.enter="applyPageSize" @blur="applyPageSize" min="1" max="500" />
+        条
+      </label>
     </div>
 
     <div @click="sup" class="sup-area">点我试试</div>
