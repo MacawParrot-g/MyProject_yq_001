@@ -16,7 +16,7 @@ const emit = defineEmits(['error'])
 const ATTR_OPTIONS = ['appflyer', 'adjust', 'singular', 'tenjin']
 
 const selectedAscribe = ref('')
-const dateSearch = ref(getTodayDateStr())
+const dateSearch = ref('')
 const list = ref([])
 const loading = ref(false)
 const queried = ref(false)
@@ -34,8 +34,6 @@ const resultMsg = ref('')
 const resultSuccess = ref(false)
 const currentUser = ref(localStorage.getItem('userName') || '')
 const totalUnexported = ref(null)
-// Deleted:const todayUnexported = ref(null)
-// Deleted:const totalUnexported = ref(null)
 const todayUnexportedLoading = ref(false)
 let pollTimer = null
 
@@ -62,6 +60,13 @@ async function refreshTodayUnexported() {
     }
   } catch (e) { /* silent */ }
   finally { todayUnexportedLoading.value = false }
+}
+
+function resetFilters() {
+  selectedAscribe.value = ''
+  dateSearch.value = ''
+  currentPage.value = 1
+  fetchData(true)
 }
 
 async function fetchData(resetPage = false) {
@@ -281,6 +286,7 @@ onUnmounted(() => { stopPolling() })
             <label class="field-label">日期</label>
             <input v-model="dateSearch" type="date" class="filter-input filter-date" @change="fetchData(true)" />
           </div>
+          <button class="btn-action btn-reset" @click="resetFilters">🔄 重置筛选</button>
         </div>
       </div>
     </div>
@@ -506,6 +512,11 @@ onUnmounted(() => { stopPolling() })
 .exception-tag { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: #fef3c7; color: #92400e; }
 .exception-tag.ex-正常 { background: #dcfce7; color: #166534; }
 .exception-tag.ex-验证已解决 { background: #dcfce7; color: #166534; }
+
+.filter-date::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+.btn-reset { background: linear-gradient(135deg, #f87171, #ef4444); color: #fff; padding: 8px 20px; font-size: 12px; align-self: flex-end; margin-bottom: 2px; }
+.btn-reset:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(239,68,68,0.35); }
+/* ... existing code ... */
 
 /* ========== 分页 ========== */
 .pagination { display: flex; justify-content: center; align-items: center; gap: 16px; padding: 14px 0; }
