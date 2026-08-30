@@ -241,7 +241,12 @@ public class SystemMonitorServiceImpl implements SystemMonitorService {
             if (os.contains("win")) {
                 pb = new ProcessBuilder("cmd.exe", "/c", command);
             } else {
-                pb = new ProcessBuilder("/bin/bash", "-c", command);
+                java.io.File bash = new java.io.File("/bin/bash");
+                if (bash.exists()) {
+                    pb = new ProcessBuilder("/bin/bash", "-c", command);
+                } else {
+                    pb = new ProcessBuilder("/bin/sh", "-c", command);
+                }
             }
             pb.redirectErrorStream(false);
 
