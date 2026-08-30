@@ -629,7 +629,9 @@ async function retestFlow() {
       try{
       if (jsons.success) {
         originalCurrentTargetNum.value = jsons.data.currentTargetNum ?? null
-      }}catch (e) {
+      }
+        loadGradeInfo(bundleId.value)
+      }catch (e) {
         alert('服务器无响应，请联系技术人员')
       }
       isSubmit = false
