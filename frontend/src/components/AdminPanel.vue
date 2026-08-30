@@ -17,7 +17,6 @@ import {
   executeExportByHashes,
   executeExportAll,
   fetchUnexportedByUser,
-  fetchUnexportedToday,
   fetchExportStatus,
   getExportDownloadUrl
 } from '../api/index.js'
@@ -40,7 +39,9 @@ const batchDeleting = ref(false)
 const exceptionOptions = ref([])
 const recorderOptions = ref([])
 const ATTR_OPTIONS = ['appflyer', 'adjust', 'singular', 'tenjin']
-
+const pageSize = ref(15)
+const pageSizeInput = ref(15)
+const total = ref(0)
 const activeTab = ref('data')
 const selectedHashes = ref([])
 const selectedAscribe = ref('')
@@ -50,8 +51,6 @@ const loading = ref(false)
 const queried = ref(false)
 const viewType = ref('ALL')
 const currentPage = ref(1)
-const pageSize = ref(15)
-const total = ref(0)
 const recorderSearch = ref('')
 const dateSearch = ref('')
 const summaryData = ref(null)
@@ -60,7 +59,6 @@ const userLoading = ref(false)
 const createForm = reactive({ name: '', pwd: '', type: 'USER' })
 const creating = ref(false)
 const createMsg = ref('')
-const todayUnexported = ref(null)
 const todayUnexportedLoading = ref(false)
 const exporting = ref(false)
 const exportPolling = ref(false)
@@ -179,6 +177,17 @@ function formatDateForQuery(dateStr) {
   if (!dateStr) return ''
   const parts = dateStr.split('-')
   return parts[0] + '/' + parseInt(parts[1]) + '/' + parseInt(parts[2])
+}
+
+async function refreshTodayUnexported() {
+  todayUnexportedLoading.value = true
+  try {
+    const json = await fetchUnexportedByUser(currentUser.value)
+    if (json.success && json.data) {
+      unexportedTotal.value = json.data.total || 0
+    }
+  } catch (e) { /* silent */ }
+  finally { todayUnexportedLoading.value = false }
 }
 
 async function doExportAll() {
@@ -366,24 +375,6 @@ async function queryDailyReport() {
   }
 }
 
-async function refreshTodayUnexported() {
-  todayUnexportedLoading.value = true
-  todayUnexported.value = null
-  try {
-    const [unexportedJson, todayJson] = await Promise.all([
-      fetchUnexportedByUser(currentUser.value),
-      fetchUnexportedToday(currentUser.value, formatDateForQuery(getTodayDateStr()))
-    ])
-    if (unexportedJson.success && unexportedJson.data) {
-      totalUnexported.value = unexportedJson.data.total || 0
-    }
-    if (todayJson.success && todayJson.data) {
-      todayUnexported.value = todayJson.data.count
-    }
-  } catch (e) { /* silent */ }
-  finally { todayUnexportedLoading.value = false }
-}
-
 function closeReport() {
   reportVisible.value = false
   reportData.value = null
@@ -402,6 +393,15 @@ function getAttrPercent(count) {
 }
 function prevPage() { if (currentPage.value > 1) { currentPage.value--; fetchData() } }
 function nextPage() { if (currentPage.value < totalPages.value) { currentPage.value++; fetchData() } }
+
+function applyPageSize() {
+  const v = parseInt(pageSizeInput.value)
+  if (v > 0) {
+    pageSize.value = v
+    currentPage.value = 1
+    fetchData(true)
+  }
+}
 
 async function loadUsers() {
   userLoading.value = true
@@ -763,11 +763,8 @@ onUnmounted(() => {
             <span class="unexported-badge-text">未导出: <strong>{{ unexportedTotal }}</strong> 条</span>
           </div>
           <button class="btn-action btn-refresh-unexported" @click="refreshTodayUnexported" :disabled="todayUnexportedLoading">
-            {{ todayUnexportedLoading ? '查询中...' : '🔄 今日未导出' }}
+            {{ todayUnexportedLoading ? '查询中...' : '🔄 刷新导出情况' }}
           </button>
-          <span class="today-unexported-badge" v-if="todayUnexported !== null" :class="{ 'badge-zero': todayUnexported === 0 }">
-            今日未导出: <strong>{{ todayUnexported }}</strong> 条
-          </span>
           <div class="download-section-inline" v-if="exportFileReady">
             <span class="download-file-name">📄 {{ exportFileName }}</span>
             <button class="btn-action btn-download-sm" @click="doExportDownload">⬇ 下载文件</button>
@@ -844,6 +841,11 @@ onUnmounted(() => {
         <button class="page-btn" :disabled="currentPage <= 1" @click="prevPage">‹ 上一页</button>
         <span class="page-info">第 {{ currentPage }} / {{ totalPages }} 页，共 {{ total }} 条</span>
         <button class="page-btn" :disabled="currentPage >= totalPages" @click="nextPage">下一页 ›</button>
+        <label class="page-size-label">
+          每页
+          <input class="page-size-input" type="number" v-model="pageSizeInput" @keydown.enter="applyPageSize" @blur="applyPageSize" min="1" max="500" />
+          条
+        </label>
       </div>
 
       <div class="daily-report-trigger">
@@ -1222,6 +1224,12 @@ onUnmounted(() => {
   from { transform: translateY(24px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+.page-info { font-size: 13px; color: #666; font-weight: 600; }
+.page-size-label { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: #666; font-weight: 600; margin-left: 12px; }
+.page-size-input { width: 56px; text-align: center; padding: 4px 6px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 13px; font-weight: 600; outline: none; transition: border-color 0.2s; }
+.page-size-input:focus { border-color: #667eea; }
+
 .report-modal-header {
   display: flex;
   justify-content: space-between;
