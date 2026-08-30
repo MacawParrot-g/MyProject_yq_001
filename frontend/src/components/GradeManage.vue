@@ -114,7 +114,7 @@ const queried = ref(false)
 const editingUrl = ref(null)
 const editForm = reactive({ grade: '', remark: '' })
 const saving = ref(false)
-
+const editingBundleId = ref(null)
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
 
 async function doSearch(resetPage = false) {
@@ -151,28 +151,29 @@ function resetFilters() {
   doSearch(true)
 }
 
+
 function startEdit(item) {
-  editingUrl.value = item.url
+  editingBundleId.value = item.bundleId
   editForm.grade = item.grade
   editForm.remark = item.remark || ''
 }
 
 function cancelEdit() {
-  editingUrl.value = null
+  editingBundleId.value = null
   editForm.grade = ''
   editForm.remark = ''
 }
 
-async function handleUpdate(url) {
+async function handleUpdate(bundleId) {
   if (!editForm.grade) {
     emit('error', '请选择评级等级')
     return
   }
   saving.value = true
   try {
-    const json = await gradeManageUpdate(url, editForm.grade, editForm.remark.trim())
+    const json = await gradeManageUpdate(bundleId, editForm.grade, editForm.remark.trim())
     if (json.success) {
-      editingUrl.value = null
+      editingBundleId.value = null
       await doSearch()
     } else {
       emit('error', json.message || '更新失败')
@@ -185,9 +186,9 @@ async function handleUpdate(url) {
 }
 
 async function handleDelete(item) {
-  if (!confirm(`确定要删除该评级记录吗？\nURL: ${item.url}\n评级: ${item.grade}级\n\n此操作将同时从数据库和Redis缓存中删除。`)) return
+  if (!confirm(`确定要删除该评级记录吗？\nBundle ID: ${item.bundleId}\n评级: ${item.grade}级\n\n此操作将同时从数据库和Redis缓存中删除。`)) return
   try {
-    const json = await gradeManageDelete(item.url)
+    const json = await gradeManageDelete(item.bundleId)
     if (json.success) {
       await doSearch()
     } else {
