@@ -547,7 +547,7 @@ onUnmounted(() => {
 .btn-action:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
 .btn-refresh { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; padding: 6px 18px; font-size: 12px; }
 .btn-refresh:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(102,126,234,0.35); }
-.btn-sm-action { background: #f4f5f7; color: #666; border: 1pxpx solid #e0e0e0; padding: 6px 16px; font-size: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+.btn-sm-action { background: #f4f5f7; color: #666; border: 1px solid #e0e0e0; padding: 6px 16px; font-size: 12px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
 .btn-sm-action:hover { background: #e8e8e8; color: #333; }
 
 /* ===== 日志查看器 ===== */
