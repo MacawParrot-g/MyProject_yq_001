@@ -98,7 +98,6 @@
 import { authLogin, authLogout, authStatus, fetchCountByRecorder } from './api/index.js'
 import AutoMode from './components/AutoMode.vue'
 import ManualMode from './components/ManualMode.vue'
-import ExportMode from './components/ExportMode.vue'
 import DataVisitable from "./components/DataVisitable.vue";
 import QRCodeBuilderByMan from "./components/QRCodeBuilderByMan.vue";
 import NewbieGuide from "./components/NewbieGuide.vue";
