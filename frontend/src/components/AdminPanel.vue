@@ -16,6 +16,7 @@ import {
   executeExportByDate,
   executeExportByHashes,
   executeExportAll,
+  fetchUnexportedByUser,
   fetchExportStatus,
   getExportDownloadUrl
 } from '../api/index.js'
@@ -147,15 +148,6 @@ async function fetchData(resetPage = false) {
 function getSummaryAttrPercent(count) {
   if (!summaryData.value || summaryData.value.qualifiedCount === 0) return '0.0'
   return (count * 100 / summaryData.value.qualifiedCount).toFixed(1)
-}
-
-async function loadUnexportedCount() {
-  try {
-    const json = await adminRecordStats()
-    if (json.success && json.data) {
-      unexportedTotal.value = json.data.unexportedCount || 0
-    }
-  } catch (e) { /* silent */ }
 }
 
 function startUnexportedPolling() {
@@ -376,7 +368,14 @@ function closeReport() {
   reportVisible.value = false
   reportData.value = null
 }
-
+async function loadUnexportedCount() {
+  try {
+    const json = await fetchUnexportedByUser(currentUser.value)
+    if (json.success && json.data) {
+      unexportedTotal.value = json.data.total || 0
+    }
+  } catch (e) { /* silent */ }
+}
 function getAttrPercent(count) {
   if (!reportData.value || reportData.value.qualifiedCount === 0) return '0.0'
   return (count * 100 / reportData.value.qualifiedCount).toFixed(1)
