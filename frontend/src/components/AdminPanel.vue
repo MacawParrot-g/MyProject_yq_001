@@ -181,19 +181,6 @@ function formatDateForQuery(dateStr) {
   return parts[0] + '/' + parseInt(parts[1]) + '/' + parseInt(parts[2])
 }
 
-
-async function refreshTodayUnexported() {
-  todayUnexportedLoading.value = true
-  todayUnexported.value = null
-  try {
-    const json = await fetchUnexportedToday(currentUser.value, formatDateForQuery(getTodayDateStr()))
-    if (json.success && json.data) {
-      todayUnexported.value = json.data.count
-    }
-  } catch (e) { /* silent */ }
-  finally { todayUnexportedLoading.value = false }
-}
-
 async function doExportAll() {
   if (exporting.value || exportPolling.value) return
   exporting.value = true
@@ -377,6 +364,24 @@ async function queryDailyReport() {
   } finally {
     reportLoading.value = false
   }
+}
+
+async function refreshTodayUnexported() {
+  todayUnexportedLoading.value = true
+  todayUnexported.value = null
+  try {
+    const [unexportedJson, todayJson] = await Promise.all([
+      fetchUnexportedByUser(currentUser.value),
+      fetchUnexportedToday(currentUser.value, formatDateForQuery(getTodayDateStr()))
+    ])
+    if (unexportedJson.success && unexportedJson.data) {
+      totalUnexported.value = unexportedJson.data.total || 0
+    }
+    if (todayJson.success && todayJson.data) {
+      todayUnexported.value = todayJson.data.count
+    }
+  } catch (e) { /* silent */ }
+  finally { todayUnexportedLoading.value = false }
 }
 
 function closeReport() {
