@@ -480,9 +480,9 @@ const gradeLoading = ref(false)
 const showGradeModal = ref(false)
 const gradeSaving = ref(false)
 const gradeMsg = ref('')
-const urlAlreadyGraded = ref(false)
 const currentUserName = ref(localStorage.getItem('userName') || '')
 const gradeForm = reactive({ grade: '', remark: '' })
+const editingBundleId = ref(null)
 
 const form = reactive({
   exception_type: '',
@@ -902,10 +902,11 @@ async function loadGradeInfo(bundleId) {
     const json = await fetchAppGrade(bundleId)
     if (json.success && json.data) {
       gradeData.value = json.data
+      bundleIdAlreadyGraded.value = json.data.bundleIdAlreadyGraded === true
     }
-    bundleIdAlreadyGraded.value = json.bundleIdAlreadyGraded === true
   } catch (e) {
-    console.warn('评级查询失败:', e)
+    console.error('评级查询失败:', e)
+    emit('error', '评级查询失败：' + e.message)
   } finally {
     gradeLoading.value = false
   }
