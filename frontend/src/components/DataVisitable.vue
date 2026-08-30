@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import {
   fetchRecordList,
   deleteRecord,
+  fetchUnexportedByUser,
   adminBatchDelete,
   fetchCountByRecorder,
   executeExportByDate,
@@ -33,6 +34,7 @@ const resultMsg = ref('')
 const resultSuccess = ref(false)
 const currentUser = ref(localStorage.getItem('userName') || '')
 const todayUnexported = ref(null)
+const totalUnexported = ref(null)
 const todayUnexportedLoading = ref(false)
 let pollTimer = null
 
@@ -85,6 +87,24 @@ async function fetchData(resetPage = false) {
 
 function prevPage() {
   if (currentPage.value > 1) { currentPage.value--; fetchData() }
+}
+
+async function refreshTodayUnexported() {
+  todayUnexportedLoading.value = true
+  todayUnexported.value = null
+  try {
+    const [statsJson, todayJson] = await Promise.all([
+      fetchUnexportedByUser(currentUser.value),
+      fetchUnexportedToday(currentUser.value, formatDateForQuery(getTodayDateStr()))
+    ])
+    if (statsJson.success && statsJson.data) {
+      unexportedTotal.value = statsJson.data.total || 0
+    }
+    if (todayJson.success && todayJson.data) {
+      todayUnexported.value = todayJson.data.count
+    }
+  } catch (e) { /* silent */ }
+  finally { todayUnexportedLoading.value = false }
 }
 
 function nextPage() {
@@ -220,18 +240,6 @@ async function fetchDataByName() {
   }
 }
 
-async function refreshTodayUnexported() {
-  todayUnexportedLoading.value = true
-  todayUnexported.value = null
-  try {
-    const json = await fetchUnexportedToday(currentUser.value, formatDateForQuery(getTodayDateStr()))
-    if (json.success && json.data) {
-      todayUnexported.value = json.data.count
-    }
-  } catch (e) { /* silent */ }
-  finally { todayUnexportedLoading.value = false }
-}
-
 function sup() {
   alert('谢谢你，成都。谢谢你，我的同桌：吴雨芹。谢谢我自己：完整的完成了这一切！！！')
 }
@@ -287,6 +295,12 @@ onUnmounted(() => { stopPolling() })
           {{ todayUnexportedLoading ? '查询中...' : '🔄 刷新未导出' }}
         </button>
         <span class="export-tip" v-if="hasSelection">⚠️ 已切换为选中行导出模式，按日期导出已禁用</span>
+        <span class="total-unexported-badge" v-if="totalUnexported !== null" :class="{ 'badge-zero': totalUnexported === 0 }">
+          总未导出: <strong>{{ totalUnexported }}</strong> 条
+        </span>
+        <span class="today-unexported-badge" v-if="todayUnexported !== null" :class="{ 'badge-zero': todayUnexported === 0 }">
+          今日未导出: <strong>{{ todayUnexported }}</strong> 条
+        </span>
       </div>
       <div class="export-action-right" v-if="fileReady">
         <div class="download-section-inline">
@@ -403,6 +417,11 @@ onUnmounted(() => { stopPolling() })
 .today-unexported-badge { display: inline-flex; align-items: center; gap: 4px; background: #fef3c7; color: #92400e; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid #fde68a; }
 .today-unexported-badge.badge-zero { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
 .today-unexported-badge strong { font-weight: 800; font-size: 15px; }
+
+.today-unexported-badge strong { font-weight: 800; font-size: 15px; }
+.total-unexported-badge { display: inline-flex; align-items: center; gap: 4px; background: #e0e7ff; color: #3730a3; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid #c7d2fe; }
+.total-unexported-badge.badge-zero { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+.total-unexported-badge strong { font-weight: 800; font-size: 15px; }
 
 .radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
 .radio-tag { display: flex; align-items: center; gap: 4px; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; color: #fff; transition: all 0.2s; opacity: 0.35; border: 2px solid transparent; }
