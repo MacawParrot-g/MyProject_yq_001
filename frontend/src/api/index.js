@@ -105,7 +105,7 @@ export function fetchUnexportedByUser(recorder) {
 }
 
 export function executeExportByUser(recorder) {
-    return fetchWithTimeout('/api/export/execute?recorder=' + encodeURIComponent(recorder), { method: 'POST' }, 300000).then(safeJson)
+    return fetchWithTimeout('/api/export/execute-all?recorder=' + encodeURIComponent(recorder), { method: 'POST' }, 300000).then(safeJson)
 }
 
 export function fetchExportStatus(recorder) {
