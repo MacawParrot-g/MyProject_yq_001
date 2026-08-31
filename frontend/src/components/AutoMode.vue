@@ -405,6 +405,24 @@
 
 /* ... existing code ... */
 
+  .quick-export-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: linear-gradient(135deg, #eef2ff, #e0e7ff); border-radius: 14px; margin-bottom: 16px; border: 1px solid #c7d2fe; flex-wrap: wrap; gap: 10px; }
+.quick-export-left { display: flex; align-items: center; gap: 8px; }
+.quick-export-right { display: flex; align-items: center; gap: 10px; background: #e8f5e9; padding: 8px 16px; border-radius: 10px; border-left: 3px solid #43a047; }
+.btn-quick-export { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none; padding: 12px 24px; font-size: 14px; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px; }
+.btn-quick-export:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(102,126,234,0.4); }
+.btn-quick-export:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-quick-refresh { background: #fff; border: 1px solid #c7d2fe; color: #667eea; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.btn-quick-refresh:hover:not(:disabled) { background: #667eea; color: #fff; }
+.btn-quick-refresh:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-quick-download { background: linear-gradient(135deg, #43e97b, #38f9d7); color: #fff; border: none; padding: 8px 18px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+.btn-quick-download:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(67,233,123,0.35); }
+.quick-export-file { font-size: 13px; font-weight: 600; color: #2e7d32; }
+.quick-export-feedback { font-size: 13px; font-weight: 600; padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; }
+.quick-export-feedback.feedback-ok { background: #dcfce7; color: #166534; }
+.quick-export-feedback.feedback-err { background: #fef2f2; color: #991b1b; }
+.quick-export-polling { display: flex; align-items: center; font-size: 13px; color: #667eea; font-weight: 600; margin-bottom: 12px; padding: 10px 16px; background: #eef2ff; border-radius: 10px; animation: blink 1.2s infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  
 .event-placeholder-icon {
   font-size: 18px;
 }
