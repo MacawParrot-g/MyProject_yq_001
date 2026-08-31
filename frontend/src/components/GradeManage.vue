@@ -8,6 +8,10 @@
     <div class="grade-filter">
       <div class="filter-row">
         <div class="filter-field">
+          <label>Bundle ID</label>
+          <input v-model="filters.bundleId" class="filter-input" placeholder="精准搜索 Bundle ID" @keyup.enter="doSearch(true)" />
+        </div>
+        <div class="filter-field">
           <label>评级等级</label>
           <select v-model="filters.grade" class="filter-input">
             <option value="">全部</option>
@@ -103,7 +107,7 @@ import { gradeManageSearch, gradeManageDelete, gradeManageUpdate } from '../api/
 
 const emit = defineEmits(['error'])
 
-const filters = reactive({ grade: '', recorder: '', keyword: '' })
+const filters = reactive({ bundleId: '', grade: '', recorder: '', keyword: '' })
 const list = ref([])
 const total = ref(0)
 const currentPage = ref(1)
@@ -123,6 +127,7 @@ async function doSearch(resetPage = false) {
   queried.value = true
   try {
     const json = await gradeManageSearch({
+      bundleId: filters.bundleId.trim() || null,
       grade: filters.grade || null,
       recorder: filters.recorder.trim() || null,
       keyword: filters.keyword.trim() || null,
@@ -145,6 +150,7 @@ async function doSearch(resetPage = false) {
 }
 
 function resetFilters() {
+  filters.bundleId = ''
   filters.grade = ''
   filters.recorder = ''
   filters.keyword = ''
