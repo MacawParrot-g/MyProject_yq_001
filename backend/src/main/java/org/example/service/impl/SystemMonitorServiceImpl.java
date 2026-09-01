@@ -187,42 +187,48 @@ public class SystemMonitorServiceImpl implements SystemMonitorService {
 
     @Override
     public Result getRedisKeys(int db, int limit) {
+        LettuceConnectionFactory factory = null;
         try {
-            List<Map<String, Object>> keys = redisTemplate.execute((org.springframework.data.redis.connection.RedisConnection connection) -> {
-                connection.select(db);
+            RedisStandaloneConfiguration config = new RedisStandaloneConfiguration(redisHost, redisPort);
+            config.setDatabase(db);
+            factory = new LettuceConnectionFactory(config);
+            factory.afterPropertiesSet();
 
-                ScanOptions scanOptions = ScanOptions.scanOptions()
-                        .count(Math.max(limit, 100))
-                        .build();
+            RedisTemplate<String, Object> template = new RedisTemplate<>();
+            template.setConnectionFactory(factory);
+            template.setKeySerializer(new StringRedisSerializer());
+            template.setValueSerializer(new Jackson2JsonRedisSerializer<>(Object.class));
+            template.setHashKeySerializer(new StringRedisSerializer());
+            template.setHashValueSerializer(new StringRedisSerializer());
+            template.afterPropertiesSet();
 
-                List<Map<String, Object>> result = new ArrayList<>();
-                try (Cursor<byte[]> cursor = connection.scan(scanOptions)) {
-                    int count = 0;
-                    while (cursor.hasNext() && count < limit) {
-                        byte[] keyBytes = cursor.next();
-                        String key = new String(keyBytes, StandardCharsets.UTF_8);
-
-                        String type = connection.keyCommands().type(keyBytes).code();
-                        Long ttl = connection.keyCommands().pTtl(keyBytes);
-
-                        Map<String, Object> keyInfo = new LinkedHashMap<>();
-                        keyInfo.put("key", key);
-                        keyInfo.put("type", type);
-                        keyInfo.put("ttl", ttl != null ? ttl : -1);
-                        result.add(keyInfo);
-                        count++;
-                    }
+            List<Map<String, Object>> keys = new ArrayList<>();
+            try (Cursor<String> cursor = template.scan(ScanOptions.scanOptions().count(Math.max(limit, 100)).build())) {
+                int count = 0;
+                while (cursor.hasNext() && count < limit) {
+                    String key = cursor.next();
+                    Map<String, Object> keyInfo = new LinkedHashMap<>();
+                    keyInfo.put("key", key);
+                    String type = Objects.requireNonNull(template.type(key)).code();
+                    keyInfo.put("type", type);
+                    Long ttl = template.getExpire(key);
+                    keyInfo.put("ttl", ttl != null ? ttl : -1);
+                    keys.add(keyInfo);
+                    count++;
                 }
-                return result;
-            });
+            }
 
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("db", db);
-            response.put("keys", keys != null ? keys : List.of());
-            response.put("total", keys != null ? keys.size() : 0);
-            return Result.success("查询成功", response);
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("db", db);
+            result.put("keys", keys);
+            result.put("total", keys.size());
+            return Result.success("查询成功", result);
         } catch (Exception e) {
             return Result.fail("Redis查询失败: " + e.getMessage());
+        } finally {
+            if (factory != null) {
+                try { factory.destroy(); } catch (Exception ignored) {}
+            }
         }
     }
 
