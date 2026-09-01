@@ -103,7 +103,7 @@ public class SystemMonitorServiceImpl implements SystemMonitorService {
             try {
                 var conn = factory.getConnection();
                 try {
-                    serverInfo = conn.info("server");
+                    serverInfo = conn.info();
                 } finally {
                     conn.close();
                 }
@@ -118,7 +118,7 @@ public class SystemMonitorServiceImpl implements SystemMonitorService {
                     try {
                         conn.select(db);
                         if (serverInfo == null) {
-                            serverInfo = conn.info("server");
+                            serverInfo = conn.info();
                         }
                         Properties info = conn.info("keyspace");
                         long keyCount = 0;
