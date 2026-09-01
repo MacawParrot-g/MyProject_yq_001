@@ -6,27 +6,30 @@
         <span class="polling-status">🔄 正在每10秒自动获取下载任务...（第{{ pollCount }}次）</span>
         <button class="btn-timer-cancel" @click="stopPolling">停止轮询</button>
       </div>
-      <div class="top-actions">
-        <button class="btn-refresh" @click="comfirm()" :disabled="loading">
-          {{ loading ? '加载中...' : '刷新数据' }}
-        </button>
-      </div>
+<!--      <div class="top-actions">-->
+<!--        <button class="btn-refresh" @click="comfirm()" :disabled="loading">-->
+<!--          {{ loading ? '加载中...' : '刷新数据' }}-->
+<!--        </button>-->
+<!--      </div>-->
     </div>
-
     <div v-if="loading && !downloadUrl" class="loading">正在获取数据...</div>
-
-    <div class="quick-export-bar" v-if="currentUser">
-      <div class="quick-export-left">
+    <div class="combined-action-bar" v-if="currentUser">
+      <div class="combined-left">
+        <button class="btn-refresh" @click="comfirm()" :disabled="loading">
+          {{ loading ? '加载中...' : '🔄 刷新下载任务' }}
+        </button>
+        <button class="btn-quick-refresh-count" @click="loadQuickExportCount" :disabled="quickExportPolling" title="刷新导出数量">🔄</button>
+      </div>
+      <div class="combined-right">
         <button class="btn-quick-export" @click="doQuickExport" :disabled="quickExportLoading || quickExportPolling || quickExportCount === 0">
           <span v-if="quickExportLoading">⏳ 导出中...</span>
           <span v-else-if="quickExportPolling">🔄 文件生成中...</span>
-          <span v-else>📤 用户{{ currentUser }}一共可导出{{ quickExportCount ?? '...' }}条数据</span>
+          <span v-else>📤 导出{{ quickExportCount ?? '...' }}条数据</span>
         </button>
-        <button class="btn-quick-refresh" @click="loadQuickExportCount" :disabled="quickExportPolling">🔄</button>
-      </div>
-      <div class="quick-export-right" v-if="quickExportFileReady">
-        <span class="quick-export-file">📄 {{ quickExportFileName }}</span>
-        <button class="btn-quick-download" @click="doQuickExportDownload">⬇ 下载</button>
+        <div class="combined-download" v-if="quickExportFileReady">
+          <span class="quick-export-file">📄 {{ quickExportFileName }}</span>
+          <button class="btn-quick-download" @click="doQuickExportDownload">⬇ 下载</button>
+        </div>
       </div>
     </div>
     <div v-if="quickExportMsg" class="quick-export-feedback" :class="{ 'feedback-ok': quickExportMsgSuccess, 'feedback-err': !quickExportMsgSuccess }">
@@ -36,10 +39,8 @@
       <div class="state-spinner" style="width:16px;height:16px;border-width:2px;margin:0;display:inline-block;vertical-align:middle;margin-right:6px;"></div>
       文件生成中，请稍候...
     </div>
-
     <div v-if="loading && !downloadUrl" class="loading">正在获取数据...</div>
-
-    、<div class="empty-placeholder" v-if="!downloadUrl && !loading">
+    <div class="empty-placeholder" v-if="!downloadUrl && !loading">
     <div class="empty-icon">404 NO FOUND</div>
     <div class="empty-text">当前没有任何测试条目，请点击刷新按钮刷新第一条数据</div>
   </div>
@@ -181,8 +182,9 @@
         <button class="btn-grade" @click="showGradeModal = true" :disabled="bundleIdAlreadyGraded">
           📝 应用评分
         </button>
+        <div class="save-success" v-if="saveMsg">{{ saveMsg }}</div>
       </div>
-      <div class="save-success" v-if="saveMsg">{{ saveMsg }}</div>
+<!--      <div class="save-success" v-if="saveMsg">{{ saveMsg }}</div>-->
     </div>
 
     <div class="modal-overlay" v-if="showGradeModal" @click.self="showGradeModal = false">
@@ -252,6 +254,14 @@
   text-align: center;
   line-height: 1.6;
 }
+.quick-export-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: linear-gradient(135deg, #eef2ff, #e0e7ff); border-radius: 14px; margin-bottom: 16px; border: 1px solid #c7d2fe; flex-wrap: wrap; gap: 10px; }
+.combined-action-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: linear-gradient(135deg, #eef2ff, #e0e7ff); border-radius: 14px; margin-bottom: 16px; border: 1px solid #c7d2fe; flex-wrap: wrap; gap: 12px; }
+.combined-left { display: flex; align-items: center; gap: 8px; }
+.combined-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.combined-download { display: flex; align-items: center; gap: 10px; background: #e8f5e9; padding: 8px 16px; border-radius: 10px; border-left: 3px solid #43a047; }
+.btn-quick-refresh-count { background: #fff; border: 1px solid #c7d2fe; color: #667eea; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.btn-quick-refresh-count:hover:not(:disabled) { background: #667eea; color: #fff; }
+.btn-quick-refresh-count:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .polling-section {
   display: flex;
@@ -405,7 +415,7 @@
 
 /* ... existing code ... */
 
-  .quick-export-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: linear-gradient(135deg, #eef2ff, #e0e7ff); border-radius: 14px; margin-bottom: 16px; border: 1px solid #c7d2fe; flex-wrap: wrap; gap: 10px; }
+.quick-export-bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: linear-gradient(135deg, #eef2ff, #e0e7ff); border-radius: 14px; margin-bottom: 16px; border: 1px solid #c7d2fe; flex-wrap: wrap; gap: 10px; }
 .quick-export-left { display: flex; align-items: center; gap: 8px; }
 .quick-export-right { display: flex; align-items: center; gap: 10px; background: #e8f5e9; padding: 8px 16px; border-radius: 10px; border-left: 3px solid #43a047; }
 .btn-quick-export { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none; padding: 12px 24px; font-size: 14px; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px; }
@@ -422,7 +432,7 @@
 .quick-export-feedback.feedback-err { background: #fef2f2; color: #991b1b; }
 .quick-export-polling { display: flex; align-items: center; font-size: 13px; color: #667eea; font-weight: 600; margin-bottom: 12px; padding: 10px 16px; background: #eef2ff; border-radius: 10px; animation: blink 1.2s infinite; }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-  
+
 .event-placeholder-icon {
   font-size: 18px;
 }
