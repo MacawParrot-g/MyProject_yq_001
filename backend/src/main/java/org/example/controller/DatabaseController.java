@@ -5,6 +5,8 @@ import org.example.common.DataViewType;
 import org.example.common.Result;
 import org.example.entity.TestStatic;
 import org.example.service.DatabaseService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,6 +15,9 @@ import java.util.Map;
 
 @RestController
 public class DatabaseController {
+
+    private static final Logger log = LoggerFactory.getLogger(DatabaseController.class);
+
 
     @Autowired
     private DatabaseService databaseService;
@@ -103,6 +108,7 @@ public class DatabaseController {
         try {
             return databaseService.queryByPage(ascribe, frozen, recorder, dateFrom, dateTo, page, size);
         } catch (Exception e) {
+            log.error("分页查询异常 | ascribe={} | recorder={} | dateFrom={} | dateTo={} | page={}", ascribe, recorder, dateFrom, dateTo, page, e);
             return Result.fail("查询失败：" + e.getMessage());
         }
     }
