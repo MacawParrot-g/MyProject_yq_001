@@ -81,57 +81,60 @@ onUnmounted(() => {
   <div class="notification-wrapper">
     <button class="notification-bell" @click="togglePanel" :class="{ 'bell-has-unread': unreadCount > 0 }">
       🔔
-      <span v-if="unreadCount > 0" class="bell-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+      <span v-if="unreadCount > 0" class="bellbadge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
     </button>
 
-    <div v-if="showPanel" class="notification-panel">
-      <div class="notification-panel-header">
-        <span class="notification-panel-title">🔔 通知中心</span>
-        <div class="notification-panel-actions">
-          <button v-if="unreadCount > 0" class="btn-mark-all" @click="handleMarkAllRead">全部已读</button>
-          <button class="btn-close-panel" @click="showPanel = false">✕</button>
-        </div>
-      </div>
-
-      <div v-if="loading" class="notification-loading">加载中...</div>
-
-      <div v-if="!loading && notifications.length === 0" class="notification-empty">
-        <div class="empty-icon">📭</div>
-        <div>暂无通知</div>
-      </div>
-
-      <div v-if="notifications.length > 0" class="notification-list">
-        <div
-            v-for="n in notifications"
-            :key="n.id"
-            class="notification-item"
-            :class="{ 'notification-unread': !n.isRead }"
-            @click="handleMarkRead(n)"
-        >
-          <div class="notification-item-icon">{{ getTypeIcon(n.type) }}</div>
-          <div class="notification-item-body">
-            <div class="notification-item-title">{{ n.title }}</div>
-            <div class="notification-item-content" v-if="n.content">{{ n.content }}</div>
-            <div class="notification-item-time">{{ n.createdAt }}</div>
+    <div v-if="showPanel" class="notification-overlay" @click.self="showPanel = false">
+      <div class="notification-panel">
+        <div class="notification-panel-header">
+          <span class="notification-panel-title">🔔 通知中心</span>
+          <div class="notification-panel-actions">
+            <button v-if="unreadCount > 0" class="btn-mark-all" @click="handleMarkAllRead">全部已读</button>
+            <button class="btn-close-panel" @click="showPanel = false">✕</button>
           </div>
-          <div v-if="!n.isRead" class="notification-item-dot"></div>
+        </div>
+
+        <div v-if="loading" class="notification-loading">加载中...</div>
+
+        <div v-if="!loading && notifications.length === 0" class="notification-empty">
+          <div class="empty-icon">📭</div>
+          <div>暂无通知</div>
+        </div>
+
+        <div v-if="notifications.length > 0" class="notification-list">
+          <div
+              v-for="n in notifications"
+              :key="n.id"
+              class="notification-item"
+              :class="{ 'notification-unread': !n.isRead }"
+              @click="handleMarkRead(n)"
+          >
+            <div class="notification-item-icon">{{ getTypeIcon(n.type) }}</div>
+            <div class="notification-item-body">
+              <div class="notification-item-title">{{ n.title }}</div>
+              <div class="notification-item-content" v-if="n.content">{{ n.content }}</div>
+              <div class="notification-item-time">{{ n.createdAt }}</div>
+            </div>
+            <div v-if="!n.isRead" class="notification-item-dot"></div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </template>
 
-<style scoped>
-.notification-wrapper { position: relative; }
+<style scoped>.notification-wrapper { position: relative; }
 .notification-bell { background: none; border: none; font-size: 20px; cursor: pointer; position: relative; padding: 4px 8px; border-radius: 8px; transition: background 0.2s; }
 .notification-bell:hover { background: rgba(255,255,255,0.1); }
 .bell-has-unread { animation: shake 0.5s ease-in-out; }
 @keyframes shake { 0%,100% { transform: rotate(0); } 25% { transform: rotate(15deg); } 75% { transform: rotate(-15deg); } }
 .bellbadge { position: absolute; top: -2px; right: -2px; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
 
-.notification-panel { position: absolute; top: 40px; right: 0; width: 380px; max-height: 500px; background: #fff; border-radius: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); border: 1px solid #e8e8e8; z-index: 200; display: flex; flex-direction: column; overflow: hidden; }
-.notification-panel-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f0f0f0; background: #fafbfc; }
-.notification-panel-title { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+.notification-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.35); z-index: 999; display: flex; align-items: center; justify-content: center; }
+.notification-panel { width: 420px; max-height: 560px; background: #fff; border-radius: 16px; box-shadow: 0 12px 48px rgba(0,0,0,0.2); border: 1px solid #e8e8e8; display: flex; flex-direction: column; overflow: hidden; animation: panelIn 0.2s ease-out; }
+@keyframes panelIn { from { opacity: 0; transform: scale(0.95) translateY(-10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.notification-panel-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f0f0f0; background: #fafbfc; }
+.notification-panel-title { font-size: 15px; font-weight: 700; color: #1a1a2e; }
 .notification-panel-actions { display: flex; gap: 8px; align-items: center; }
 .btn-mark-all { background: none; border: none; color: #667eea; font-size: 12px; font-weight: 600; cursor: pointer; }
 .btn-mark-all:hover { text-decoration: underline; }
@@ -142,8 +145,8 @@ onUnmounted(() => {
 .notification-empty { padding: 40px 20px; text-align: center; color: #aaa; }
 .empty-icon { font-size: 36px; margin-bottom: 8px; }
 
-.notification-list { overflow-y: auto; max-height: 420px; }
-.notification-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #f5f5f5; cursor: pointer; transition: background 0.15s; }
+.notification-list { overflow-y: auto; max-height: 460px; }
+.notification-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px 20px; border-bottom: 1px solid #f5f5f5; cursor: pointer; transition: background 0.15s; }
 .notification-item:hover { background: #f8f9ff; }
 .notification-unread { background: #f0f4ff; }
 .notification-unread:hover { background: #e8edff; }
