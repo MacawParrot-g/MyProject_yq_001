@@ -80,7 +80,7 @@ public class LogExecutionTimeAspect {
             long duration = System.currentTimeMillis() - start;
 
             String params = Arrays.stream(args)
-                    .filter(a -> !(a instanceof HttpServletRequest) && !(a instanceof HttpServletResponse))
+                    .filter(a -> a != null && !(a instanceof HttpServletRequest) && !(a instanceof HttpServletResponse))
                     .map(a -> {
                         try { return a.toString().substring(0, Math.min(a.toString().length(), 200)); }
                         catch (Exception e) { return a.getClass().getSimpleName(); }
