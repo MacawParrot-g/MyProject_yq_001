@@ -123,7 +123,7 @@ public class DatabaseServiceImpl implements DatabaseService, CommandLineRunner {
     @Transactional(readOnly = true)
     public Result queryByPage(String ascribe, boolean frozenOnly, String recorder, String dateFrom, String dateTo, int page, int size) {
         int offset = (page - 1) * size;
-        List<TestStatic> list = generanMapper.selectByConditionPaged(ascribe, frozenOnly, recorder, dateFrom, dateTo, size, offset);
+        List<TestStatic> list = generanMapper.selectByConditionPagedWithDate(ascribe, frozenOnly, recorder, dateFrom, dateTo, size, offset);
         long total = generanMapper.countByCondition(ascribe, frozenOnly, recorder, dateFrom, dateTo);
 
         DataViewType viewType = DataViewType.ALL;
