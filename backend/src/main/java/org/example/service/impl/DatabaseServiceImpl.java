@@ -124,7 +124,7 @@ public class DatabaseServiceImpl implements DatabaseService, CommandLineRunner {
     public Result queryByPage(String ascribe, boolean frozenOnly, String recorder, String dateFrom, String dateTo, int page, int size) {
         int offset = (page - 1) * size;
         List<TestStatic> list = generanMapper.selectByConditionPagedWithDate(ascribe, frozenOnly, recorder, dateFrom, dateTo, size, offset);
-        long total = generanMapper.countByCondition(ascribe, frozenOnly, recorder, dateFrom, dateTo);
+        long total = generanMapper.countByConditionWithDate(ascribe, frozenOnly, recorder, dateFrom, dateTo);
 
         DataViewType viewType = DataViewType.ALL;
         boolean hasAscribe = ascribe != null && !ascribe.isEmpty();
