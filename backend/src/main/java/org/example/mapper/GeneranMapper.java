@@ -72,30 +72,30 @@ public interface GeneranMapper extends BaseMapper<TestStatic> {
     @Update("UPDATE test_static SET isOutput = 1 WHERE isOutput = 0 AND recorder = #{recorder}")
     int markAsExportedByRecorder(@Param("recorder") String recorder);
 
-    @Select("<script>" +
-            "SELECT hash, URL, bundleId, ascribe, event_number, exception_type, record_data, recorder, remark, isOutput " +
-            "FROM test_static WHERE 1=1" +
-            "<if test='ascribe != null and ascribe != \"\"'> AND ascribe = #{ascribe}</if>" +
-            "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
-            "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
-            " ORDER BY URL" +
-            " LIMIT #{size} OFFSET #{offset}" +
-            "</script>")
-    List<TestStatic> selectByConditionPaged(@Param("ascribe") String ascribe,
-                                            @Param("frozenOnly") boolean frozenOnly,
-                                            @Param("recorder") String recorder,
-                                            @Param("size") int size,
-                                            @Param("offset") int offset);
+//    @Select("<script>" +
+//            "SELECT hash, URL, bundleId, ascribe, event_number, exception_type, record_data, recorder, remark, isOutput " +
+//            "FROM test_static WHERE 1=1" +
+//            "<if test='ascribe != null and ascribe != \"\"'> AND ascribe = #{ascribe}</if>" +
+//            "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
+//            "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
+//            " ORDER BY URL" +
+//            " LIMIT #{size} OFFSET #{offset}" +
+//            "</script>")
+//    List<TestStatic> selectByConditionPaged(@Param("ascribe") String ascribe,
+//                                            @Param("frozenOnly") boolean frozenOnly,
+//                                            @Param("recorder") String recorder,
+//                                            @Param("size") int size,
+//                                            @Param("offset") int offset);
 
-    @Select("<script>" +
-            "SELECT COUNT(*) FROM test_static WHERE 1=1" +
-            "<if test='ascribe != null and ascribe != \"\"'> AND ascribe = #{ascribe}</if>" +
-            "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
-            "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
-            "</script>")
-    long countByCondition(@Param("ascribe") String ascribe,
-                          @Param("frozenOnly") boolean frozenOnly,
-                          @Param("recorder") String recorder);
+//    @Select("<script>" +
+//            "SELECT COUNT(*) FROM test_static WHERE 1=1" +
+//            "<if test='ascribe != null and ascribe != \"\"'> AND ascribe = #{ascribe}</if>" +
+//            "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
+//            "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
+//            "</script>")
+//    long countByCondition(@Param("ascribe") String ascribe,
+//                          @Param("frozenOnly") boolean frozenOnly,
+//                          @Param("recorder") String recorder);
 
     @Select("<script>" +
             "SELECT URL, bundleId FROM test_static WHERE record_data IN" +
@@ -242,38 +242,38 @@ public interface GeneranMapper extends BaseMapper<TestStatic> {
     @Select("SELECT hash FROM test_static WHERE hash IS NOT NULL AND hash != ''")
     List<String> selectAllHashes();
 
-    @Select("<script>" +
-            "SELECT COUNT(*) FROM test_static WHERE 1=1" +
-            "<if test='ascribe != null and ascribe != \"\"'> AND ascribe = #{ascribe}</if>" +
-            "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
-            "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
-            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &gt;= STR_TO_DATE(REPLACE(#{dateFrom}, '/', '-'), '%Y-%m-%d')</if>" +
-            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &lt;= STR_TO_DATE(REPLACE(#{dateTo}, '/', '-'), '%Y-%m-%d')</if>" +
-            "</script>")
-    long countByCondition(@Param("ascribe") String ascribe,
-                          @Param("frozenOnly") boolean frozenOnly,
-                          @Param("recorder") String recorder,
-                          @Param("dateFrom") String dateFrom,
-                          @Param("dateTo") String dateTo);
+//    @Select("<script>" +
+//            "SELECT COUNT(*) FROM test_static WHERE 1=1" +
+//            "<if test='ascribe != null and ascribe != \"\"'> AND ascribe = #{ascribe}</if>" +
+//            "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
+//            "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
+//            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &gt;= STR_TO_DATE(REPLACE(#{dateFrom}, '/', '-'), '%Y-%m-%d')</if>" +
+//            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &lt;= STR_TO_DATE(REPLACE(#{dateTo}, '/', '-'), '%Y-%m-%d')</if>" +
+//            "</script>")
+//    long countByCondition(@Param("ascribe") String ascribe,
+//                          @Param("frozenOnly") boolean frozenOnly,
+//                          @Param("recorder") String recorder,
+//                          @Param("dateFrom") String dateFrom,
+//                          @Param("dateTo") String dateTo);
 
-    @Select("<script>" +
-            "SELECT hash, URL, bundleId, ascribe, event_number, exception_type, record_data, recorder, remark, isOutput " +
-            "FROM test_static WHERE 1=1" +
-            "<if test='ascribe != null and ascribe != \"\"'> AND ascribe = #{ascribe}</if>" +
-            "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
-            "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
-            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &gt;= STR_TO_DATE(REPLACE(#{dateFrom}, '/', '-'), '%Y-%m-%d')</if>" +
-            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &lt;= STR_TO_DATE(REPLACE(#{dateTo}, '/', '-'), '%Y-%m-%d')</if>" +
-            " ORDER BY record_data DESC, URL" +
-            " LIMIT #{size} OFFSET #{offset}" +
-            "</script>")
-    List<TestStatic> selectByConditionPaged(@Param("ascribe") String ascribe,
-                                            @Param("frozenOnly") boolean frozenOnly,
-                                            @Param("recorder") String recorder,
-                                            @Param("dateFrom") String dateFrom,
-                                            @Param("dateTo") String dateTo,
-                                            @Param("size") int size,
-                                            @Param("offset") int offset);
+//    @Select("<script>" +
+//            "SELECT hash, URL, bundleId, ascribe, event_number, exception_type, record_data, recorder, remark, isOutput " +
+//            "FROM test_static WHERE 1=1" +
+//            "<if test='ascribe != null and ascribe != \"\"'> AND ascribe = #{ascribe}</if>" +
+//            "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
+//            "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
+//            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &gt;= STR_TO_DATE(REPLACE(#{dateFrom}, '/', '-'), '%Y-%m-%d')</if>" +
+//            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &lt;= STR_TO_DATE(REPLACE(#{dateTo}, '/', '-'), '%Y-%m-%d')</if>" +
+//            " ORDER BY record_data DESC, URL" +
+//            " LIMIT #{size} OFFSET #{offset}" +
+//            "</script>")
+//    List<TestStatic> selectByConditionPaged(@Param("ascribe") String ascribe,
+//                                            @Param("frozenOnly") boolean frozenOnly,
+//                                            @Param("recorder") String recorder,
+//                                            @Param("dateFrom") String dateFrom,
+//                                            @Param("dateTo") String dateTo,
+//                                            @Param("size") int size,
+//                                            @Param("offset") int offset);
 
 
 
@@ -285,34 +285,34 @@ public interface GeneranMapper extends BaseMapper<TestStatic> {
             "</script>")
     int batchInsertRecords(@Param("records") List<TestStatic> records);
 
-    @Select("<script>" +
-            "SELECT hash, URL, bundleId, ascribe, event_number, exception_type, record_data, recorder, remark, isOutput " +
-            "FROM test_static WHERE 1=1" +
-            "<if test='ascribe != null and ascribe != \"\"'> AND ascribe LIKE CONCAT('%', #{ascribe}, '%')</if>" +
-            "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
-            "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
-            "<if test='recordData != null and recordData != \"\"'> AND record_data = #{recordData}</if>" +
-            " ORDER BY URL" +
-            " LIMIT #{size} OFFSET #{offset}" +
-            "</script>")
-    List<TestStatic> selectByConditionPaged(@Param("ascribe") String ascribe,
-                                            @Param("frozenOnly") boolean frozenOnly,
-                                            @Param("recorder") String recorder,
-                                            @Param("recordData") String recordData,
-                                            @Param("size") int size,
-                                            @Param("offset") int offset);
+//    @Select("<script>" +
+//            "SELECT hash, URL, bundleId, ascribe, event_number, exception_type, record_data, recorder, remark, isOutput " +
+//            "FROM test_static WHERE 1=1" +
+//            "<if test='ascribe != null and ascribe != \"\"'> AND ascribe LIKE CONCAT('%', #{ascribe}, '%')</if>" +
+//            "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
+//            "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
+//            "<if test='recordData != null and recordData != \"\"'> AND record_data = #{recordData}</if>" +
+//            " ORDER BY URL" +
+//            " LIMIT #{size} OFFSET #{offset}" +
+//            "</script>")
+//    List<TestStatic> selectByConditionPaged(@Param("ascribe") String ascribe,
+//                                            @Param("frozenOnly") boolean frozenOnly,
+//                                            @Param("recorder") String recorder,
+//                                            @Param("recordData") String recordData,
+//                                            @Param("size") int size,
+//                                            @Param("offset") int offset);
 
-    @Select("<script>" +
-            "SELECT COUNT(*) FROM test_static WHERE 1=1" +
-            "<if test='ascribe != null and ascribe != \"\"'> AND ascribe LIKE CONCAT('%', #{ascribe}, '%')</if>" +
-            "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
-            "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
-            "<if test='recordData != null and recordData != \"\"'> AND record_data = #{recordData}</if>" +
-            "</script>")
-    long countByCondition(@Param("ascribe") String ascribe,
-                          @Param("frozenOnly") boolean frozenOnly,
-                          @Param("recorder") String recorder,
-                          @Param("recordData") String recordData);
+//    @Select("<script>" +
+//            "SELECT COUNT(*) FROM test_static WHERE 1=1" +
+//            "<if test='ascribe != null and ascribe != \"\"'> AND ascribe LIKE CONCAT('%', #{ascribe}, '%')</if>" +
+//            "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
+//            "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
+//            "<if test='recordData != null and recordData != \"\"'> AND record_data = #{recordData}</if>" +
+//            "</script>")
+//    long countByCondition(@Param("ascribe") String ascribe,
+//                          @Param("frozenOnly") boolean frozenOnly,
+//                          @Param("recorder") String recorder,
+//                          @Param("recordData") String recordData);
 
     @Select("SELECT * FROM test_static WHERE isOutput = 0 AND recorder = #{recorder} AND record_data = #{recordData}")
     List<TestStatic> selectUnexportedByDateAndRecorder(@Param("recorder") String recorder, @Param("recordData") String recordData);
