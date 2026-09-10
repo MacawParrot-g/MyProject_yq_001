@@ -69,7 +69,7 @@
           <div class="info-card-value">{{ originalCurrentTargetNum }}</div>
         </div>
 
-        <div class="info-card grade-card">
+        <div class="info-card grade-card" @click="gradeData && (showGradeDetailModal = true)" :style="gradeData ? { cursor: 'pointer' } : {}">
           <div class="info-card-label">应用评级</div>
           <div class="info-card-value" v-if="gradeLoading" style="font-size:12px;color:#94a3b8">加载中...</div>
           <template v-else-if="gradeData">
@@ -217,6 +217,20 @@
         </div>
         <div v-if="gradeMsg" class="feedback" :class="{ 'feedback-ok': gradeMsg.startsWith('✅'), 'feedback-err': gradeMsg.startsWith('❌') }" style="margin-top:10px">
           {{ gradeMsg }}
+        </div>
+      </div>
+    </div>
+    <div class="grade-detail-overlay" v-if="showGradeDetailModal" @click.self="showGradeDetailModal = false">
+      <div class="grade-detail-modal" :class="'grade-detail-' + (gradeData?.grade || '').toLowerCase()">
+        <div class="grade-detail-header">
+          <span class="grade-detail-icon">{{ gradeData?.grade === 'A' ? '🟢' : gradeData?.grade === 'B' ? '🔵' : gradeData?.grade === 'C' ? '🟡' : '🔴' }}</span>
+          <span class="grade-detail-title">当前应用评级{{ gradeData?.grade }}级</span>
+        </div>
+        <div class="grade-detail-body">
+          <p class="grade-detail-desc">{{ gradeDescriptions[gradeData?.grade] || '' }}</p>
+        </div>
+        <div class="grade-detail-footer">
+          <button class="btn-modal btn-cancel" @click="showGradeDetailModal = false">关闭</button>
         </div>
       </div>
     </div>
@@ -484,6 +498,96 @@
     min-width: auto;
   }
 }
+</* ========== 评级详情弹窗 ========== */
+.grade-detail-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease;
+}
+.grade-detail-modal {
+  width: 420px;
+  max-width: 90vw;
+  border-radius: 20px;
+  padding: 32px;
+  position: relative;
+  animation: slideUp 0.25s ease;
+  border: 2px solid;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+}
+.grade-detail-modal.grade-detail-a {
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border-color: #86efac;
+  color: #166534;
+}
+.grade-detail-modal.grade-detail-b {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+.grade-detail-modal.grade-detail-c {
+  background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  border-color: #fde68a;
+  color: #92400e;
+}
+.grade-detail-modal.grade-detail-d {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+.grade-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.grade-detail-icon {
+  font-size: 32px;
+}
+.grade-detail-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.grade-detail-body {
+  margin-bottom: 24px;
+}
+.grade-detail-desc {
+  font-size: 15px;
+  line-height: 1.8;
+  margin: 0;
+  font-weight: 500;
+}
+.grade-detail-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+.grade-detail-footer .btn-cancel {
+  padding: 8px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid;
+  background: rgba(255,255,255,0.6);
+  transition: all 0.2s;
+}
+.grade-detail-a .grade-detail-footer .btn-cancel { border-color: #86efac; color: #166534; }
+.grade-detail-b .grade-detail-footer .btn-cancel { border-color: #93c5fd; color: #1e40af; }
+.grade-detail-c .grade-detail-footer .btn-cancel { border-color: #fde68a; color: #92400e; }
+.grade-detail-d .grade-detail-footer .btn-cancel { border-color: #fca5a5; color: #991b1b; }
+.grade-detail-footer .btn-cancel:hover { background: rgba(255,255,255,0.9); }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 <script setup>import { ref, reactive, onMounted, watch, nextTick, onUnmounted } from 'vue'
 import QRCode from 'qrcode'
@@ -553,6 +657,13 @@ const quickExportMsg = ref('')
 const quickExportMsgSuccess = ref(false)
 let quickExportPollTimer = null
 const currentUser = currentUserName
+const showGradeDetailModal = ref(false)
+const gradeDescriptions = {
+  A: '该应用很容易出事件，游玩的时候可以适当缩短测试时间',
+  B: '该应用需要游玩较长时间，或者玩到指定关卡才会出事件,建议拉长到10分钟以上',
+  C: '该应用出事件成因不明，如果超时10分钟没有上报，请联系管理员将该应用的评级改为D',
+  D: '该应用超时十分钟无法出事件，或者因要求更高的操作系统版本，越狱检测，卡死进不去，需要付费，网络问题无法进入，地区不支持，建议跳过'
+}
 const form = reactive({
   exception_type: '',
   remark: '',
