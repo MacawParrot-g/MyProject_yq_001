@@ -1126,21 +1126,6 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- ==================== 审计日志 Tab ==================== -->
-    <div v-if="activeTab === 'audit'" class="admin-section">
-      <AuditLogPanel />
-    </div>
-
-    <!-- ==================== 定时任务 Tab ==================== -->
-    <div v-if="activeTab === 'tasks'" class="admin-section">
-      <ScheduledTaskPanel />
-    </div>
-
-    <!-- ==================== 通知管理 Tab ==================== -->
-    <div v-if="activeTab === 'notify'" class="admin-section">
-      <NotificationManager />
-    </div>
-
   </div>
 </template>
 
