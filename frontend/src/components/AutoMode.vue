@@ -57,6 +57,10 @@
       </div>
       <div class="side-info">
         <div class="info-card">
+          <div class="info-card-label">App ID</div>
+          <div class="info-card-value">{{ appId }}</div>
+        </div>
+        <div class="info-card">
           <div class="info-card-label">Bundle ID</div>
           <div class="info-card-value">{{ bundleId }}</div>
         </div>
@@ -524,6 +528,7 @@ const timerCountdown = ref(0)
 const bundleIdAlreadyGraded = ref(false)
 const polling = ref(false)
 const pollCount = ref(0)
+const appId = ref('')
 let pollTimer = null
 let timerMsg = ref('')
 let timerInterval = null
@@ -624,6 +629,7 @@ async function fetchData() {
       duplicateTip.value = ''
       downloadUrl.value = json.data.downloadUrl || ''
       bundleId.value = json.data.bundleId || ''
+      appId.value = json.data.appId || ''
       originalCurrentTargetNum.value = json.data.currentTargetNum ?? null
       isSubmit=false;
       if(originalCurrentTargetNum.value<=1||originalCurrentTargetNum.value===0){
@@ -647,6 +653,7 @@ async function retestFlow() {
   try {
     const dates = getPast3DaysDates()
     const json = await fetchRandomForRetest(dates)
+    appId.value = json.data.appId || '此为复测内容，暂无appid'
     if (json.success && json.data) {
       showRetestModal.value = false
       downloadUrl.value = json.data.downloadUrl || ''
@@ -696,6 +703,7 @@ function startPolling() {
         pollCount.value = 0
         downloadUrl.value = json.data.downloadUrl || ''
         bundleId.value = json.data.bundleId || ''
+        appId.value = json.data.appId || ''
         originalCurrentTargetNum.value = json.data.currentTargetNum ?? null
         isSubmit = false
         if (originalCurrentTargetNum.value <= 1 || originalCurrentTargetNum.value === 0) {
