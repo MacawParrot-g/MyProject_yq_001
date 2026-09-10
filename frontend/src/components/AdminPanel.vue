@@ -41,6 +41,13 @@ const recorderSummary = ref([])
 const editingRow = ref(null)
 const editBuffer = reactive({})
 const savingEdit = ref(false)
+
+let chartInstances = []
+const ATTR_COLORS = ['#22c55e', '#f59e0b', '#3b82f6', '#a855f7']
+const ATTR_COLORS_LIGHT = ['rgba(34,197,94,0.7)', 'rgba(245,158,11,0.7)', 'rgba(59,130,246,0.7)', 'rgba(168,85,247,0.7)']
+const RECORDER_COLORS = ['#6366f1', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6', '#06b6d4', '#ef4444', '#84cc16']
+// ... existing code ...
+
 let attrPieChart = null
 let recorderBarChart = null
 const advExpanded = ref(true)
@@ -221,83 +228,181 @@ function formatDateForQuery(dateStr) {
 
 function renderCharts() {
   destroyCharts()
-  if (summaryData.value) {
-    const pieCtx = document.getElementById('attrPieChart')
-    if (pieCtx) {
-      const attrs = summaryData.value.attributions
-      attrPieChart = new Chart(pieCtx, {
-        type: 'doughnut',
-        data: {
-          labels: ['appflyer', 'adjust', 'singular', 'tenjin'],
-          datasets: [{
-            data: [attrs.appflyer, attrs.adjust, attrs.singular, attrs.tenjin],
-            backgroundColor: ['#22c55e', '#f59e0b', '#3b82f6', '#a855f7'],
-            borderWidth: 2,
-            borderColor: '#fff'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'bottom', labels: { padding: 16, font: { size: 12, weight: '600' } } },
-            title: { display: true, text: '归因占比分布', font: { size: 14, weight: '700' }, color: '#333', padding: { bottom: 12 } }
-          }
+  if (!summaryData.value) return
+
+  const mainPie = document.getElementById('attrPieChart')
+  if (mainPie) {
+    const attrs = summaryData.value.attributions
+    chartInstances.push(new Chart(mainPie, {
+      type: 'doughnut',
+      data: {
+        labels: ['appflyer', 'adjust', 'singular', 'tenjin'],
+        datasets: [{
+          data: [attrs.appflyer, attrs.adjust, attrs.singular, attrs.tenjin],
+          backgroundColor: ATTR_COLORS,
+          borderWidth: 3, borderColor: '#fff', hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '55%',
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 14, font: { size: 11, weight: '600' }, usePointStyle: true, pointStyle: 'circle' } },
+          title: { display: true, text: '整体归因占比', font: { size: 14, weight: '700' }, color: '#1a1a2e', padding: { bottom: 8 } },
+          tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw} 条 (${summaryData.value.qualifiedCount > 0 ? (ctx.raw * 100 / summaryData.value.qualifiedCount).toFixed(1) : 0}%)` } }
         }
-      })
-    }
+      }
+    }))
   }
+
+  const exportPie = document.getElementById('exportPieChart')
+  if (exportPie) {
+    const exported = summaryData.value.totalCount - (summaryData.value.totalCount - (summaryData.value.totalCount > 0 ? Math.round(summaryData.value.totalCount * (statsData.value?.exportedCount || 0) / (statsData.value?.totalCount || 1)) : 0))
+    chartInstances.push(new Chart(exportPie, {
+      type: 'doughnut',
+      data: {
+        labels: ['已导出', '未导出'],
+        datasets: [{
+          data: [summaryData.value.totalCount > 0 ? Math.round(summaryData.value.totalCount * ((statsData.value?.exportedCount || 0) / Math.max(statsData.value?.totalCount || 1, 1))) : 0,
+            summaryData.value.totalCount - Math.round(summaryData.value.totalCount * ((statsData.value?.exportedCount || 0) / Math.max(statsData.value?.totalCount || 1, 1)))],
+          backgroundColor: ['#22c55e', '#fbbf24'],
+          borderWidth: 3, borderColor: '#fff', hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '55%',
+        plugins: {
+          legend: { position: 'bottom', labels: { padding: 14, font: { size: 11, weight: '600' }, usePointStyle: true, pointStyle: 'circle' } },
+          title: { display: true, text: '导出状态分布', font: { size: 14, weight: '700' }, color: '#1a1a2e', padding: { bottom: 8 } }
+        }
+      }
+    }))
+  }
+
   if (recorderSummary.value.length > 0) {
     const barCtx = document.getElementById('recorderBarChart')
     if (barCtx) {
       const labels = recorderSummary.value.map(r => r.recorder)
-      const rates = recorderSummary.value.map(r => r.qualifyRate)
-      const totals = recorderSummary.value.map(r => r.totalCount)
-      recorderBarChart = new Chart(barCtx, {
+      chartInstances.push(new Chart(barCtx, {
         type: 'bar',
         data: {
-          labels: labels,
+          labels,
           datasets: [
-            {
-              label: '合格率 (%)',
-              data: rates,
-              backgroundColor: 'rgba(99, 102, 241, 0.75)',
-              borderColor: '#6366f1',
-              borderWidth: 1,
-              borderRadius: 6,
-              yAxisID: 'y'
-            },
-            {
-              label: '总记录数',
-              data: totals,
-              backgroundColor: 'rgba(203, 213, 225, 0.5)',
-              borderColor: '#94a3b8',
-              borderWidth: 1,
-              borderRadius: 6,
-              yAxisID: 'y1'
-            }
+            { label: '合格率 (%)', data: recorderSummary.value.map(r => r.qualifyRate), backgroundColor: 'rgba(99,102,241,0.75)', borderColor: '#6366f1', borderWidth: 1, borderRadius: 6, yAxisID: 'y' },
+            { label: '总记录数', data: recorderSummary.value.map(r => r.totalCount), backgroundColor: 'rgba(203,213,225,0.5)', borderColor: '#94a3b8', borderWidth: 1, borderRadius: 6, yAxisID: 'y1' }
           ]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
+          responsive: true, maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'top', labels: { font: { size: 12, weight: '600' } } },
-            title: { display: true, text: '各记录人合格率', font: { size: 14, weight: '700' }, color: '#333', padding: { bottom: 12 } }
+            legend: { position: 'top', labels: { font: { size: 11, weight: '600' }, usePointStyle: true } },
+            title: { display: true, text: '各记录人合格率 vs 工作量', font: { size: 14, weight: '700' }, color: '#1a1a2e', padding: { bottom: 8 } }
           },
           scales: {
             y: { type: 'linear', position: 'left', min: 0, max: 100, title: { display: true, text: '合格率 (%)', font: { size: 11 } }, ticks: { callback: v => v + '%' } },
             y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: '记录数', font: { size: 11 } } }
           }
         }
-      })
+      }))
     }
+
+    const stackedCtx = document.getElementById('stackedAttrChart')
+    if (stackedCtx) {
+      chartInstances.push(new Chart(stackedCtx, {
+        type: 'bar',
+        data: {
+          labels: recorderSummary.value.map(r => r.recorder),
+          datasets: ATTR_OPTIONS.map((attr, i) => ({
+            label: attr,
+            data: recorderSummary.value.map(r => r.attributions[attr]),
+            backgroundColor: ATTR_COLORS_LIGHT[i],
+            borderColor: ATTR_COLORS[i],
+            borderWidth: 1, borderRadius: 4
+          }))
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { font: { size: 11, weight: '600' }, usePointStyle: true, pointStyle: 'rectRounded' } },
+            title: { display: true, text: '各记录人归因构成对比', font: { size: 14, weight: '700' }, color: '#1a1a2e', padding: { bottom: 8 } }
+          },
+          scales: {
+            x: { stacked: true, grid: { display: false } },
+            y: { stacked: true, title: { display: true, text: '记录数', font: { size: 11 } } }
+          }
+        }
+      }))
+    }
+
+    const radarCtx = document.getElementById('radarChart')
+    if (radarCtx && recorderSummary.value.length >= 3) {
+      const maxTotal = Math.max(...recorderSummary.value.map(r => r.totalCount))
+      const maxQualified = Math.max(...recorderSummary.value.map(r => r.qualifiedCount))
+      chartInstances.push(new Chart(radarCtx, {
+        type: 'radar',
+        data: {
+          labels: ['工作量', '合格数', '合格率', 'appflyer', 'adjust', 'singular', 'tenjin'],
+          datasets: recorderSummary.value.slice(0, 6).map((r, i) => {
+            const maxAttr = Math.max(...ATTR_OPTIONS.map(a => r.attributions[a])) || 1
+            return {
+              label: r.recorder,
+              data: [
+                maxTotal > 0 ? Math.round(r.totalCount * 100 / maxTotal) : 0,
+                maxQualified > 0 ? Math.round(r.qualifiedCount * 100 / maxQualified) : 0,
+                r.qualifyRate,
+                maxAttr > 0 ? Math.round(r.attributions.appflyer * 100 / maxAttr) : 0,
+                maxAttr > 0 ? Math.round(r.attributions.adjust * 100 / maxAttr) : 0,
+                maxAttr > 0 ? Math.round(r.attributions.singular * 100 / maxAttr) : 0,
+                maxAttr > 0 ? Math.round(r.attributions.tenjin * 100 / maxAttr) : 0
+              ],
+              backgroundColor: RECORDER_COLORS[i] + '20',
+              borderColor: RECORDER_COLORS[i],
+              borderWidth: 2, pointBackgroundColor: RECORDER_COLORS[i], pointRadius: 3
+            }
+          })
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { font: { size: 11, weight: '600' }, usePointStyle: true, padding: 12 } },
+            title: { display: true, text: '记录人综合能力雷达', font: { size: 14, weight: '700' }, color: '#1a1a2e', padding: { bottom: 8 } }
+          },
+          scales: { r: { min: 0, max: 100, ticks: { stepSize: 25, font: { size: 9 }, backdropColor: 'transparent' }, grid: { color: '#e5e7eb' }, pointLabels: { font: { size: 10, weight: '600' } } } }
+        }
+      }))
+    }
+
+    recorderSummary.value.forEach((r, idx) => {
+      const canvas = document.getElementById(`recorderPie_${idx}`)
+      if (canvas) {
+        const attrs = r.attributions
+        const total = r.qualifiedCount || 1
+        chartInstances.push(new Chart(canvas, {
+          type: 'doughnut',
+          data: {
+            labels: ['appflyer', 'adjust', 'singular', 'tenjin', '无归因'],
+            datasets: [{
+              data: [attrs.appflyer, attrs.adjust, attrs.singular, attrs.tenjin, r.totalCount - r.qualifiedCount],
+              backgroundColor: [...ATTR_COLORS, '#e5e7eb'],
+              borderWidth: 2, borderColor: '#fff', hoverOffset: 6
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false, cutout: '50%',
+            plugins: {
+              legend: { display: false },
+              title: { display: true, text: `${r.recorder}（${r.totalCount}条 / 合格率${r.qualifyRate}%）`, font: { size: 12, weight: '700' }, color: '#333', padding: { bottom: 4 } },
+              tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw} 条 (${total > 0 ? (ctx.raw * 100 / r.totalCount).toFixed(1) : 0}%)` } }
+            }
+          }
+        }))
+      }
+    })
   }
 }
 
 function destroyCharts() {
-  if (attrPieChart) { attrPieChart.destroy(); attrPieChart = null }
-  if (recorderBarChart) { recorderBarChart.destroy(); recorderBarChart = null }
+  chartInstances.forEach(c => { try { c.destroy() } catch(e) {} })
+  chartInstances = []
 }
 
 function startEditRow(index) {
@@ -922,15 +1027,62 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div v-if="summaryData || recorderSummary.length > 0" class="charts-row">
+        <div v-if="summaryData" class="charts-row">
           <div class="chart-card">
-            <div class="chart-canvas-wrap">
-              <canvas id="attrPieChart"></canvas>
-            </div>
+            <div class="chart-canvas-wrap"><canvas id="attrPieChart"></canvas></div>
           </div>
-          <div class="chart-card chart-card-wide">
-            <div class="chart-canvas-wrap">
-              <canvas id="recorderBarChart"></canvas>
+          <div class="chart-card">
+            <div class="chart-canvas-wrap"><canvas id="exportPieChart"></canvas></div>
+          </div>
+        </div>
+
+        <div v-if="recorderSummary.length > 0" class="charts-row">
+          <div class="chart-card">
+            <div class="chart-canvas-wrap"><canvas id="recorderBarChart"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-canvas-wrap"><canvas id="stackedAttrChart"></canvas></div>
+          </div>
+        </div>
+
+        <div v-if="recorderSummary.length >= 3" class="charts-row charts-row-single">
+          <div class="chart-card">
+            <div class="chart-canvas-wrap chart-canvas-tall"><canvas id="radarChart"></canvas></div>
+          </div>
+        </div>
+
+        <div v-if="recorderSummary.length > 0" class="recorder-pies-section">
+          <div class="recorder-pies-header">
+            <span class="recorder-pies-title">📊 各记录人归因明细</span>
+            <span class="recorder-pies-sub">共 {{ recorderSummary.length }} 位记录人</span>
+          </div>
+          <div class="recorder-pies-grid">
+            <div v-for="(r, idx) in recorderSummary" :key="r.recorder" class="recorder-pie-card">
+              <div class="chart-canvas-wrap recorder-pie-wrap">
+                <canvas :id="'recorderPie_' + idx"></canvas>
+              </div>
+              <div class="recorder-pie-stats">
+                <div class="recorder-pie-stat">
+                  <span class="recorder-pie-stat-val">{{ r.totalCount }}</span>
+                  <span class="recorder-pie-stat-lbl">总数</span>
+                </div>
+                <div class="recorder-pie-stat">
+                  <span class="recorder-pie-stat-val">{{ r.qualifiedCount }}</span>
+                  <span class="recorder-pie-stat-lbl">合格</span>
+                </div>
+                <div class="recorder-pie-stat">
+                  <span class="recorder-pie-stat-val recorder-pie-stat-rate">{{ r.qualifyRate }}%</span>
+                  <span class="recorder-pie-stat-lbl">合格率</span>
+                </div>
+              </div>
+              <div class="recorder-pie-attr-list">
+                <div v-for="attr in ['appflyer', 'adjust', 'singular', 'tenjin']" :key="attr" class="recorder-pie-attr-row">
+                  <span class="recorder-pie-attr-dot" :style="{ background: ATTR_COLORS[['appflyer','adjust','singular','tenjin'].indexOf(attr)] }"></span>
+                  <span class="recorder-pie-attr-name">{{ attr }}</span>
+                  <span class="recorder-pie-attr-count">{{ r.attributions[attr] }}</span>
+                  <span class="recorder-pie-attr-pct">{{ r.totalCount > 0 ? (r.attributions[attr] * 100 / r.totalCount).toFixed(1) : '0.0' }}%</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1311,11 +1463,36 @@ onUnmounted(() => {
 @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ========== 图表区域 ========== */
-.charts-row { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; margin-bottom: 20px; }
+.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.charts-row-single { grid-template-columns: 1fr; max-width: 600px; margin-left: auto; margin-right: auto; }
 @media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
-.chart-card { background: #fff; border: 1px solid #eaeaea; border-radius: 14px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
-.chart-card-wide { }
-.chart-canvas-wrap { position: relative; height: 320px; }
+.chart-card { background: #fff; border: 1px solid #eaeaea; border-radius: 14px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); transition: box-shadow 0.2s; }
+.chart-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.chart-canvas-wrap { position: relative; height: 300px; }
+.chart-canvas-tall { height: 380px; }
+
+/* ========== 记录人饼图网格 ========== */
+.recorder-pies-section { margin-bottom: 24px; }
+.recorder-pies-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; }
+.recorder-pies-title { font-size: 16px; font-weight: 700; color: #1a1a2e; }
+.recorder-pies-sub { font-size: 12px; color: #999; font-weight: 500; }
+.recorder-pies-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 1100px) { .recorder-pies-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .recorder-pies-grid { grid-template-columns: 1fr; } }
+.recorder-pie-card { background: #fff; border: 1px solid #eaeaea; border-radius: 14px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); transition: transform 0.2s, box-shadow 0.2s; }
+.recorder-pie-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+.recorder-pie-wrap { height: 200px; }
+.recorder-pie-stats { display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0; margin: 8px 0; }
+.recorder-pie-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.recorder-pie-stat-val { font-size: 16px; font-weight: 800; color: #1a1a2e; }
+.recorder-pie-stat-lbl { font-size: 10px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.3px; }
+.recorder-pie-stat-rate { color: #4338ca; }
+.recorder-pie-attr-list { display: flex; flex-direction: column; gap: 4px; }
+.recorder-pie-attr-row { display: flex; align-items: center; gap: 6px; font-size: 11px; padding: 2px 0; }
+.recorder-pie-attr-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.recorder-pie-attr-name { font-weight: 600; color: #555; flex: 1; }
+.recorder-pie-attr-count { font-weight: 700; color: #333; min-width: 24px; text-align: right; }
+.recorder-pie-attr-pct { font-weight: 600; color: #999; min-width: 42px; text-align: right; }
 
 /* ========== 行内编辑 ========== */
 .row-editing td { background: #fffbeb !important; }
