@@ -57,7 +57,7 @@ const ATTR_OPTIONS = ['appflyer', 'adjust', 'singular', 'tenjin']
 const pageSize = ref(15)
 const pageSizeInput = ref(15)
 const total = ref(0)
-const activeTab = ref('data')
+const activeTab = ref('report')
 const selectedHashes = ref([])
 const selectedAscribe = ref('')
 const frozenOnly = ref(false)
@@ -748,7 +748,7 @@ onUnmounted(() => {
     </div>
 
     <div class="admin-tabs">
-      <button class="admin-tab" :class="{ active: activeTab === 'data' }" @click="activeTab = 'data'">
+      <button class="admin-tab" :class="{ active: activeTab === 'report' }" @click="activeTab = 'report'">
         <span class="tab-icon">V</span><span class="tab-text">数据报表</span>
       </button>
       <button class="admin-tab" :class="{ active: activeTab === 'management' }" @click="activeTab = 'management'">
