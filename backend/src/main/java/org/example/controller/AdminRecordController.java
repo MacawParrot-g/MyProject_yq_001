@@ -127,7 +127,13 @@ public class AdminRecordController {
     public Result appIdSave(@RequestBody java.util.Map<String, Object> body) {
         try {
             String bundleId = (String) body.get("bundleId");
-            Long appId = body.get("appId") != null ? ((Number) body.get("appId")).longValue() : null;
+            Long appId = null;
+            Object appIdRaw = body.get("appId");
+            if (appIdRaw instanceof Number) {
+                appId = ((Number) appIdRaw).longValue();
+            } else if (appIdRaw instanceof String) {
+                appId = Long.parseLong((String) appIdRaw);
+            }
             boolean saved = appIdService.saveIfNotExist(bundleId, appId);
             if (saved) {
                 return Result.success("✅ 已写入数据库");
