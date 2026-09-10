@@ -955,6 +955,7 @@ async function saveToMySQL() {
       URL: downloadUrl.value,
       bundleId: bundleId.value,
       ascribe: (attributions.value || []).join(';'),
+      appId: appId.value,
       event_number: newCurrentTargetNum.value,
       exception_type: form.exception_type.trim(),
       record_data: toStorageDate(form.record_data),
