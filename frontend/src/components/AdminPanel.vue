@@ -1,4 +1,4 @@
-<script setup>import { ref, computed, onMounted, reactive, onUnmounted } from 'vue'
+<script setup>import { ref, computed, onMounted, reactive, onUnmounted, nextTick, watch } from 'vue'
 import {
   fetchUserList,
   createUser,
@@ -12,14 +12,19 @@ import {
   adminRecordStats,
   adminBatchDelete,
   adminRecordSummary,
+  adminRecordSummaryByRecorder,
   adminBatchImport,
   executeExportByDate,
   executeExportByHashes,
   executeExportAll,
   fetchUnexportedByUser,
   fetchExportStatus,
-  getExportDownloadUrl
+  getExportDownloadUrl,
+  updateRecord
 } from '../api/index.js'
+
+import { Chart, registerables } from 'chart.js'
+Chart.register(...registerables)
 
 import AuditLogPanel from './AuditLogPanel.vue'
 import ScheduledTaskPanel from './ScheduledTaskPanel.vue'
@@ -35,6 +40,13 @@ const advFilters = reactive({
   isOutput: null,
   recorder: ''
 })
+
+const recorderSummary = ref([])
+const editingRow = ref(null)
+const editBuffer = reactive({})
+const savingEdit = ref(false)
+let attrPieChart = null
+let recorderBarChart = null
 const advExpanded = ref(true)
 const statsData = ref(null)
 const selectedUrls = ref([])
@@ -106,6 +118,21 @@ const viewTypeLabel = {
   SINGULAR_FROZEN: 'singular · 已冻结', TENJIN_FROZEN: 'tenjin · 已冻结'
 }
 
+function resetFilters() {
+  advFilters.dateFrom = ''
+  advFilters.dateTo = ''
+  advFilters.bundleId = ''
+  advFilters.keyword = ''
+  advFilters.exceptionType = ''
+  advFilters.isOutput = null
+  advFilters.recorder = ''
+  selectedAscribe.value = ''
+  frozenOnly.value = false
+  recorderSearch.value = ''
+  dateSearch.value = ''
+  fetchData(true)
+}
+
 async function fetchData(resetPage = false) {
   if (resetPage) currentPage.value = 1
   list.value = []
@@ -127,10 +154,16 @@ async function fetchData(resetPage = false) {
     isOutput: advFilters.isOutput
   }
   try {
-    const [searchJson, summaryJson] = await Promise.all([
+    const promises = [
       adminRecordSearch({ ...filterParams, page: currentPage.value, size: pageSize.value }),
       adminRecordSummary(filterParams)
-    ])
+    ]
+    if (activeTab.value === 'report') {
+      promises.push(adminRecordSummaryByRecorder(filterParams))
+    }
+    const results = await Promise.all(promises)
+    const searchJson = results[0]
+    const summaryJson = results[1]
     if (searchJson.success) {
       list.value = searchJson.data || []
       viewType.value = searchJson.viewType || 'ALL'
@@ -140,6 +173,14 @@ async function fetchData(resetPage = false) {
     }
     if (summaryJson.success) {
       summaryData.value = summaryJson.data
+    }
+    if (activeTab.value === 'report' && results[2]) {
+      const recorderJson = results[2]
+      if (recorderJson.success) {
+        recorderSummary.value = recorderJson.data || []
+        await nextTick()
+        renderCharts()
+      }
     }
   } catch (e) {
     emit('error', '查询请求失败：' + e.message)
@@ -180,6 +221,144 @@ function formatDateForQuery(dateStr) {
   if (!dateStr) return ''
   const parts = dateStr.split('-')
   return parts[0] + '/' + parseInt(parts[1]) + '/' + parseInt(parts[2])
+}
+
+function renderCharts() {
+  destroyCharts()
+  if (summaryData.value) {
+    const pieCtx = document.getElementById('attrPieChart')
+    if (pieCtx) {
+      const attrs = summaryData.value.attributions
+      attrPieChart = new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['appflyer', 'adjust', 'singular', 'tenjin'],
+          datasets: [{
+            data: [attrs.appflyer, attrs.adjust, attrs.singular, attrs.tenjin],
+            backgroundColor: ['#22c55e', '#f59e0b', '#3b82f6', '#a855f7'],
+            borderWidth: 2,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { padding: 16, font: { size: 12, weight: '600' } } },
+            title: { display: true, text: '归因占比分布', font: { size: 14, weight: '700' }, color: '#333', padding: { bottom: 12 } }
+          }
+        }
+      })
+    }
+  }
+  if (recorderSummary.value.length > 0) {
+    const barCtx = document.getElementById('recorderBarChart')
+    if (barCtx) {
+      const labels = recorderSummary.value.map(r => r.recorder)
+      const rates = recorderSummary.value.map(r => r.qualifyRate)
+      const totals = recorderSummary.value.map(r => r.totalCount)
+      recorderBarChart = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: '合格率 (%)',
+              data: rates,
+              backgroundColor: 'rgba(99, 102, 241, 0.75)',
+              borderColor: '#6366f1',
+              borderWidth: 1,
+              borderRadius: 6,
+              yAxisID: 'y'
+            },
+            {
+              label: '总记录数',
+              data: totals,
+              backgroundColor: 'rgba(203, 213, 225, 0.5)',
+              borderColor: '#94a3b8',
+              borderWidth: 1,
+              borderRadius: 6,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { font: { size: 12, weight: '600' } } },
+            title: { display: true, text: '各记录人合格率', font: { size: 14, weight: '700' }, color: '#333', padding: { bottom: 12 } }
+          },
+          scales: {
+            y: { type: 'linear', position: 'left', min: 0, max: 100, title: { display: true, text: '合格率 (%)', font: { size: 11 } }, ticks: { callback: v => v + '%' } },
+            y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: '记录数', font: { size: 11 } } }
+          }
+        }
+      })
+    }
+  }
+}
+
+function destroyCharts() {
+  if (attrPieChart) { attrPieChart.destroy(); attrPieChart = null }
+  if (recorderBarChart) { recorderBarChart.destroy(); recorderBarChart = null }
+}
+
+function startEditRow(index) {
+  editingRow.value = index
+  const item = list.value[index]
+  editBuffer.URL = item.URL || ''
+  editBuffer.bundleId = item.bundleId || ''
+  editBuffer.ascribe = item.ascribe || ''
+  editBuffer.event_number = item.event_number ?? ''
+  editBuffer.exception_type = item.exception_type || ''
+  editBuffer.record_data = item.record_data || ''
+  editBuffer.recorder = item.recorder || ''
+  editBuffer.remark = item.remark || ''
+}
+
+function cancelEditRow() {
+  editingRow.value = null
+}
+
+async function saveEditRow(index) {
+  savingEdit.value = true
+  const item = list.value[index]
+  const updated = {
+    hash: item.hash,
+    URL: editBuffer.URL,
+    bundleId: editBuffer.bundleId,
+    ascribe: editBuffer.ascribe,
+    event_number: editBuffer.event_number === '' ? null : parseInt(editBuffer.event_number),
+    exception_type: editBuffer.exception_type,
+    record_data: editBuffer.record_data,
+    recorder: editBuffer.recorder,
+    remark: editBuffer.remark,
+    isOutput: item.isOutput
+  }
+  try {
+    const json = await updateRecord(updated)
+    if (json.success) {
+      Object.assign(list.value[index], {
+        URL: editBuffer.URL,
+        bundleId: editBuffer.bundleId,
+        ascribe: editBuffer.ascribe,
+        event_number: updated.event_number,
+        exception_type: editBuffer.exception_type,
+        record_data: editBuffer.record_data,
+        recorder: editBuffer.recorder,
+        remark: editBuffer.remark
+      })
+      editingRow.value = null
+      await loadStats()
+    } else {
+      emit('error', json.message || '更新失败')
+    }
+  } catch (e) {
+    emit('error', '更新请求失败：' + e.message)
+  } finally {
+    savingEdit.value = false
+  }
 }
 
 async function refreshTodayUnexported() {
@@ -315,21 +494,6 @@ async function loadStats() {
       recorderOptions.value = json.data.recorders || []
     }
   } catch (e) { /* silent */ }
-}
-
-function resetFilters() {
-  advFilters.dateFrom = ''
-  advFilters.dateTo = ''
-  advFilters.bundleId = ''
-  advFilters.keyword = ''
-  advFilters.exceptionType = ''
-  advFilters.isOutput = null
-  advFilters.recorder = ''
-  selectedAscribe.value = ''
-  frozenOnly.value = false
-  recorderSearch.value = ''
-  dateSearch.value = ''
-  fetchData(true)
 }
 
 async function doBatchDelete() {
@@ -572,6 +736,7 @@ onUnmounted(() => {
   stopUserPolling()
   stopExportPolling()
   stopUnexportedPolling()
+  destroyCharts()
 })
 </script>
 
@@ -584,47 +749,44 @@ onUnmounted(() => {
 
     <div class="admin-tabs">
       <button class="admin-tab" :class="{ active: activeTab === 'data' }" @click="activeTab = 'data'">
-        <span class="tab-icon">📊</span><span class="tab-text">数据管理</span>
+        <span class="tab-icon">V</span><span class="tab-text">数据报表</span>
+      </button>
+      <button class="admin-tab" :class="{ active: activeTab === 'management' }" @click="activeTab = 'management'">
+        <span class="tab-icon">D</span><span class="tab-text">数据管理</span>
       </button>
       <button class="admin-tab" :class="{ active: activeTab === 'users' }" @click="activeTab = 'users'">
-        <span class="tab-icon">👥</span><span class="tab-text">用户管理</span>
-      </button>
-      <button class="admin-tab" :class="{ active: activeTab === 'audit' }" @click="activeTab = 'audit'">
-        <span class="tab-icon">📋</span><span class="tab-text">审计日志</span>
-      </button>
-      <button class="admin-tab" :class="{ active: activeTab === 'tasks' }" @click="activeTab = 'tasks'">
-        <span class="tab-icon">⏰</span><span class="tab-text">定时任务</span>
+        <span class="tab-icon">U</span><span class="tab-text">用户管理</span>
       </button>
     </div>
 
-    <!-- ==================== 数据管理 Tab ==================== -->
-    <div v-if="activeTab === 'data'" class="admin-section">
+    <!-- ==================== 数据报表 + 数据管理 共享区域 ==================== -->
+    <div v-if="activeTab === 'report' || activeTab === 'management'" class="admin-section">
 
       <!-- 顶部统计卡片 -->
       <div class="stats-row" v-if="statsData">
         <div class="stat-card">
-          <div class="stat-card-icon">📦</div>
+          <div class="stat-card-icon">T</div>
           <div class="stat-card-body">
             <div class="stat-card-value">{{ statsData.totalCount }}</div>
             <div class="stat-card-label">总记录数</div>
           </div>
         </div>
         <div class="stat-card stat-card-exported">
-          <div class="stat-card-icon">✅</div>
+          <div class="stat-card-icon">HE</div>
           <div class="stat-card-body">
             <div class="stat-card-value">{{ statsData.exportedCount }}</div>
             <div class="stat-card-label">已导出</div>
           </div>
         </div>
         <div class="stat-card stat-card-pending">
-          <div class="stat-card-icon">⏳</div>
+          <div class="stat-card-icon">UE</div>
           <div class="stat-card-body">
             <div class="stat-card-value">{{ statsData.unexportedCount }}</div>
             <div class="stat-card-label">未导出</div>
           </div>
         </div>
         <div class="stat-card stat-card-frozen">
-          <div class="stat-card-icon">❄️</div>
+          <div class="stat-card-icon">❄</div>
           <div class="stat-card-body">
             <div class="stat-card-value">{{ statsData.frozenCount }}</div>
             <div class="stat-card-label">已冻结</div>
@@ -632,47 +794,7 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div v-if="summaryData" class="quality-panel">
-        <div class="quality-header">
-          <span class="quality-title">📊 质量分析</span>
-          <span class="quality-scope">{{ total > 0 ? '当前筛选范围' : '全量数据' }}</span>
-        </div>
-        <div class="quality-summary">
-          <div class="quality-stat">
-            <div class="quality-stat-value">{{ summaryData.totalCount }}</div>
-            <div class="quality-stat-label">总记录数</div>
-          </div>
-          <div class="quality-stat quality-stat-ok">
-            <div class="quality-stat-value">{{ summaryData.qualifiedCount }}</div>
-            <div class="quality-stat-label">合格数（有归因）</div>
-          </div>
-          <div class="quality-stat quality-stat-bad">
-            <div class="quality-stat-value">{{ summaryData.unqualifiedCount }}</div>
-            <div class="quality-stat-label">不合格数</div>
-          </div>
-          <div class="quality-stat quality-stat-rate">
-            <div class="quality-stat-value">{{ summaryData.qualifyRate }}%</div>
-            <div class="quality-stat-label">合格率</div>
-          </div>
-        </div>
-        <div class="quality-attr-section">
-          <div class="quality-attr-title">归因占比（基于合格数据 {{ summaryData.qualifiedCount }} 条）</div>
-          <div class="quality-attr-bars">
-            <div class="quality-attr-bar-item" v-for="type in ['appflyer', 'adjust', 'singular', 'tenjin']" :key="type">
-              <div class="quality-attr-bar-header">
-                <span class="quality-attr-bar-name" :class="type">{{ type }}</span>
-                <span class="quality-attr-bar-count">{{ summaryData.attributions[type] }} 条</span>
-                <span class="quality-attr-bar-percent">{{ getSummaryAttrPercent(summaryData.attributions[type]) }}%</span>
-              </div>
-              <div class="quality-attr-bar-track">
-                <div class="quality-attr-bar-fill" :class="type" :style="{ width: (summaryData.qualifiedCount > 0 ? summaryData.attributions[type] * 100 / summaryData.qualifiedCount : 0) + '%' }"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 高级搜索面板 -->
+      <!-- 高级搜索面板（共享） -->
       <div class="filter-card">
         <div class="filter-top-row">
           <div class="filter-section">
@@ -750,242 +872,278 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="export-action-bar">
-        <div class="export-action-left">
-          <button class="btn-action btn-export-date" @click="doExportByDate" :disabled="exporting || exportPolling || hasSelection">
-            {{ exporting ? '导出中...' : '📤 按日期导出' + (advFilters.dateFrom ? '(' + advFilters.dateFrom + ')' : '(今日)') }}
-          </button>
-          <button class="btn-action btn-export-hash" @click="doExportByHashes" :disabled="exporting || exportPolling || !hasSelection">
-            {{ exporting ? '导出中...' : '📤 导出选中行 (' + selectedHashes.length + ')' }}
-          </button>
-          <button class="btn-action btn-export-all" @click="doExportAll" :disabled="exporting || exportPolling || hasSelection || unexportedTotal === 0">
-            {{ exporting ? '导出中...' : '📤 导出全部未导出' }}
-          </button>
-          <span class="export-tip" v-if="hasSelection">⚠️ 已切换为选中行导出模式</span>
-        </div>
-        <div class="export-action-right">
-          <div class="unexported-badge" :class="{ 'unexported-zero': unexportedTotal === 0 }">
-            <span class="unexported-badge-dot"></span>
-            <span class="unexported-badge-text">未导出: <strong>{{ unexportedTotal }}</strong> 条</span>
+      <!-- ==================== 数据报表 Tab 内容 ==================== -->
+      <template v-if="activeTab === 'report'">
+
+        <div v-if="summaryData" class="quality-panel">
+          <div class="quality-header">
+            <span class="quality-title">Q 质量分析</span>
+            <span class="quality-scope">{{ total > 0 ? '当前筛选范围' : '全量数据' }}</span>
           </div>
-          <button class="btn-action btn-refresh-unexported" @click="refreshTodayUnexported" :disabled="todayUnexportedLoading">
-            {{ todayUnexportedLoading ? '查询中...' : '🔄 刷新导出情况' }}
-          </button>
-          <div class="download-section-inline" v-if="exportFileReady">
-            <span class="download-file-name">📄 {{ exportFileName }}</span>
-            <button class="btn-action btn-download-sm" @click="doExportDownload">⬇ 下载文件</button>
-          </div>
-        </div>
-      </div>
-
-      <div v-if="exportResultMsg" class="feedback" :class="{ 'feedback-ok': exportResultSuccess, 'feedback-err': !exportResultSuccess }">
-        {{ exportResultMsg }}
-      </div>
-
-      <div v-if="exportPolling" class="polling-tip">
-        <div class="state-spinner" style="width:18px;height:18px;border-width:2px;margin:0;display:inline-block;vertical-align:middle;margin-right:8px;"></div>
-        文件生成中，请稍候...
-      </div>
-
-      <!-- 结果工具栏 -->
-      <div v-if="queried" class="result-toolbar">
-        <div class="result-toolbar-left">
-          <span class="result-count">共 <strong>{{ total }}</strong> 条 · 第 {{ currentPage }}/{{ totalPages }} 页</span>
-        </div>
-        <div class="result-toolbar-right">
-          <label class="batch-select-label" v-if="list.length > 0">
-            <input type="checkbox" :checked="isAllSelected()" @change="toggleSelectAll" />
-            <span>全选</span>
-          </label>
-          <span class="selected-count" v-if="selectedHashes.length > 0">已选 {{ selectedHashes.length }} 条</span>
-          <button class="btn-batch-del" v-if="selectedHashes.length > 0" @click="doBatchDelete" :disabled="batchDeleting">
-            {{ batchDeleting ? '删除中...' : '🗑 批量删除' }}
-          </button>
-        </div>
-      </div>
-
-      <div v-if="loading && !queried" class="state-block">
-        <div class="state-spinner"></div>
-        <div class="state-text">正在查询数据...</div>
-      </div>
-      <div v-if="!loading && queried && list.length === 0" class="state-block">
-        <div class="state-icon">📭</div>
-        <div class="state-text">没有符合条件的数据</div>
-      </div>
-
-      <div v-if="list.length > 0" class="table-wrapper">
-        <table class="data-table">
-          <thead>
-          <tr>
-            <th class="th-check"><input type="checkbox" :checked="isAllSelected()" @change="toggleSelectAll" /></th>
-            <th>#</th><th>URL</th><th>Bundle ID</th><th>归因</th><th>事件数</th>
-            <th>异常类型</th><th>记录日期</th><th>记录人</th><th>备注</th><th>导出</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr v-for="(item, index) in list" :key="item.hash" :class="{ 'row-selected': selectedHashes.includes(item.hash) }">
-            <td class="td-check"><input type="checkbox" :value="item.hash" v-model="selectedHashes" /></td>
-            <td class="cell-index">{{ (currentPage - 1) * pageSize + index + 1 }}</td>
-            <td :title="item.URL" class="cell-url">{{ item.URL }}</td>
-            <td class="cell-mono">{{ item.bundleId }}</td>
-            <td>{{ item.ascribe || '-' }}</td>
-            <td class="cell-num">{{ item.event_number }}</td>
-            <td>
-              <span v-if="item.exception_type" class="exception-tag" :class="'ex-' + item.exception_type">{{ item.exception_type }}</span>
-              <span v-else>-</span>
-            </td>
-            <td>{{ item.record_data || '-' }}</td>
-            <td>{{ item.recorder || '-' }}</td>
-            <td :title="item.remark" class="cell-remark">{{ item.remark || '-' }}</td>
-            <td><span :class="item.isOutput === 1 ? 'tag-exported' : 'tag-unexported'">{{ item.isOutput === 1 ? '已导出' : '未导出' }}</span></td>
-          </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div v-if="total > 0" class="pagination">
-        <button class="page-btn" :disabled="currentPage <= 1" @click="prevPage">‹ 上一页</button>
-        <span class="page-info">第 {{ currentPage }} / {{ totalPages }} 页，共 {{ total }} 条</span>
-        <button class="page-btn" :disabled="currentPage >= totalPages" @click="nextPage">下一页 ›</button>
-        <label class="page-size-label">
-          每页
-          <input class="page-size-input" type="number" v-model="pageSizeInput" @keydown.enter="applyPageSize" @blur="applyPageSize" min="1" max="500" />
-          条
-        </label>
-      </div>
-    </div>
-
-
-
-    <div class="import-section">
-      <div class="import-toggle" @click="importExpanded = !importExpanded">
-        <span class="import-toggle-icon">{{ importExpanded ? '▼' : '▶' }}</span>
-        <span class="import-toggle-icon-emoji">📥</span>
-        <span class="import-toggle-text">一键导入数据（从WPS表格粘贴）</span>
-      </div>
-      <div v-if="importExpanded" class="import-body">
-        <div class="import-help">
-          <p>将 WPS 表格中的数据直接粘贴到下方输入框，系统会自动按 Tab 分隔解析为多条记录。</p>
-          <p>数据格式（Tab分隔）：<code>URL · bundleId · 归因 · 事件数 · 异常类型 · 日期 · 记录人 · 已冻结(可选)</code></p>
-          <p>导入的数据将自动设置 <code>isOutput = 1</code>（已导出），并自动生成唯一 hash。</p>
-        </div>
-        <textarea
-            v-model="importRawText"
-            class="import-textarea"
-            placeholder="在此粘贴WPS表格数据...&#10;例如：&#10;https://apps.apple.com/...	com.example	appflyer	35	正常	2026/8/27	张三&#10;https://apps.apple.com/...	com.example2		5	超过10分钟0上报	2026/8/27	李四	已冻结"
-            rows="8"
-        ></textarea>
-        <div class="import-actions">
-          <div class="import-hint" v-if="importRawText.trim()">
-            已检测到 <strong>{{ importRawText.split('\n').filter(l => l.trim()).length }}</strong> 行数据
-          </div>
-          <div class="import-btns">
-            <button class="btn-action btn-import-clear" @click="importRawText = ''; importMsg = ''; importResult = null" v-if="importRawText">
-              清空
-            </button>
-            <button class="btn-action btn-import" @click="handleBatchImport" :disabled="importing || !importRawText.trim()">
-              {{ importing ? '导入中...' : '📥 一键导入' }}
-            </button>
-          </div>
-        </div>
-        <div v-if="importMsg" class="feedback" :class="{ 'feedback-ok': importMsg.startsWith('✅'), 'feedback-err': importMsg.startsWith('❌') }">
-          {{ importMsg }}
-        </div>
-        <div v-if="importResult" class="import-result">
-          <div class="import-result-row">
-            <span class="import-result-label">总行数</span>
-            <span class="import-result-value">{{ importResult.totalLines }}</span>
-          </div>
-          <div class="import-result-row">
-            <span class="import-result-label">成功解析</span>
-            <span class="import-result-value import-result-ok">{{ importResult.parsedCount }} 条</span>
-          </div>
-          <div class="import-result-row">
-            <span class="import-result-label">入库成功</span>
-            <span class="import-result-value import-result-ok">{{ importResult.successCount }} 条</span>
-          </div>
-          <div v-if="importResult.errorCount > 0" class="import-result-row">
-            <span class="import-result-label">解析失败</span>
-            <span class="import-result-value import-result-bad">{{ importResult.errorCount }} 条</span>
-          </div>
-          <div v-if="importResult.errors && importResult.errors.length > 0" class="import-errors">
-            <div class="import-error-title">失败详情：</div>
-            <div v-for="(err, idx) in importResult.errors" :key="idx" class="import-error-item">{{ err }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div @click="sup" class="sup-area">点我试试</div>
-
-    <!-- ==================== 日报统计弹窗 ==================== -->
-    <div class="report-overlay" v-if="reportVisible" @click.self="closeReport">
-      <div class="report-modal">
-        <div class="report-modal-header">
-          <div class="report-modal-title">
-            <span class="report-modal-icon">📊</span>
-            <h3>日报统计</h3>
-          </div>
-          <button class="report-close-btn" @click="closeReport">✕</button>
-        </div>
-        <div class="report-modal-body">
-          <div class="report-date-picker">
-            <label class="report-date-label">选择日期</label>
-            <div class="report-date-row">
-              <input v-model="reportDate" type="date" class="form-input report-date-input" />
-              <button class="btn-action btn-query" @click="queryDailyReport" :disabled="reportLoading || !reportDate">
-                {{ reportLoading ? '查询中...' : '🔍 查询' }}
-              </button>
+          <div class="quality-summary">
+            <div class="quality-stat">
+              <div class="quality-stat-value">{{ summaryData.totalCount }}</div>
+              <div class="quality-stat-label">总记录数</div>
+            </div>
+            <div class="quality-stat quality-stat-ok">
+              <div class="quality-stat-value">{{ summaryData.qualifiedCount }}</div>
+              <div class="quality-stat-label">合格数（有归因）</div>
+            </div>
+            <div class="quality-stat quality-stat-bad">
+              <div class="quality-stat-value">{{ summaryData.unqualifiedCount }}</div>
+              <div class="quality-stat-label">不合格数</div>
+            </div>
+            <div class="quality-stat quality-stat-rate">
+              <div class="quality-stat-value">{{ summaryData.qualifyRate }}%</div>
+              <div class="quality-stat-label">合格率</div>
             </div>
           </div>
-
-          <div v-if="reportData" class="report-result">
-            <div class="report-summary">
-              <div class="report-stat">
-                <div class="stat-number">{{ reportData.totalCount }}</div>
-                <div class="stat-label">总记录数</div>
-              </div>
-              <div class="report-stat stat-qualified">
-                <div class="stat-number">{{ reportData.qualifiedCount }}</div>
-                <div class="stat-label">合格数</div>
-              </div>
-              <div class="report-stat stat-unqualified">
-                <div class="stat-number">{{ reportData.unqualifiedCount }}</div>
-                <div class="stat-label">不合格数</div>
-              </div>
-              <div class="report-stat stat-rate">
-                <div class="stat-number">{{ reportData.qualifyRate }}%</div>
-                <div class="stat-label">合格率</div>
-              </div>
-            </div>
-
-            <div class="report-attr-section">
-              <div class="attr-section-title">归因占比（基于合格数据 {{ reportData.qualifiedCount }} 条）</div>
-              <div class="attr-bar-list">
-                <div class="attr-bar-item" v-for="type in ['appflyer', 'adjust', 'singular', 'tenjin']" :key="type">
-                  <div class="attr-bar-header">
-                    <span class="attr-bar-name" :class="type">{{ type }}</span>
-                    <span class="attr-bar-count">{{ reportData.attributions[type] }} 条</span>
-                    <span class="attr-bar-percent">{{ getAttrPercent(reportData.attributions[type]) }}%</span>
-                  </div>
-                  <div class="attr-bar-track">
-                    <div class="attr-bar-fill" :class="type" :style="{ width: (reportData.qualifiedCount > 0 ? reportData.attributions[type] * 100 / reportData.qualifiedCount : 0) + '%' }"></div>
-                  </div>
+          <div class="quality-attr-section">
+            <div class="quality-attr-title">归因占比（基于合格数据 {{ summaryData.qualifiedCount }} 条）</div>
+            <div class="quality-attr-bars">
+              <div class="quality-attr-bar-item" v-for="type in ['appflyer', 'adjust', 'singular', 'tenjin']" :key="type">
+                <div class="quality-attr-bar-header">
+                  <span class="quality-attr-bar-name" :class="type">{{ type }}</span>
+                  <span class="quality-attr-bar-count">{{ summaryData.attributions[type] }} 条</span>
+                  <span class="quality-attr-bar-percent">{{ getSummaryAttrPercent(summaryData.attributions[type]) }}%</span>
+                </div>
+                <div class="quality-attr-bar-track">
+                  <div class="quality-attr-bar-fill" :class="type" :style="{ width: (summaryData.qualifiedCount > 0 ? summaryData.attributions[type] * 100 / summaryData.qualifiedCount : 0) + '%' }"></div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <div v-if="!reportData && !reportLoading" class="report-placeholder">
-            <div class="placeholder-icon">📈</div>
-            <div class="placeholder-text">选择日期后点击查询，查看当日数据统计</div>
+        <div v-if="summaryData || recorderSummary.length > 0" class="charts-row">
+          <div class="chart-card">
+            <div class="chart-canvas-wrap">
+              <canvas id="attrPieChart"></canvas>
+            </div>
           </div>
-          <div v-if="reportLoading" class="report-loading">
-            <div class="state-spinner"></div>
-            <div class="state-text">正在查询统计数据...</div>
+          <div class="chart-card chart-card-wide">
+            <div class="chart-canvas-wrap">
+              <canvas id="recorderBarChart"></canvas>
+            </div>
           </div>
         </div>
-      </div>
+
+        <div v-if="loading && !queried" class="state-block">
+          <div class="state-spinner"></div>
+          <div class="state-text">正在查询数据...</div>
+        </div>
+
+      </template>
+
+      <!-- ==================== 数据管理 Tab 内容 ==================== -->
+      <template v-if="activeTab === 'management'">
+
+        <div class="export-action-bar">
+          <div class="export-action-left">
+            <button class="btn-action btn-export-date" @click="doExportByDate" :disabled="exporting || exportPolling || hasSelection">
+              {{ exporting ? '导出中...' : '📤 按日期导出' + (advFilters.dateFrom ? '(' + advFilters.dateFrom + ')' : '(今日)') }}
+            </button>
+            <button class="btn-action btn-export-hash" @click="doExportByHashes" :disabled="exporting || exportPolling || !hasSelection">
+              {{ exporting ? '导出中...' : '📤 导出选中行 (' + selectedHashes.length + ')' }}
+            </button>
+            <button class="btn-action btn-export-all" @click="doExportAll" :disabled="exporting || exportPolling || hasSelection || unexportedTotal === 0">
+              {{ exporting ? '导出中...' : '📤 导出全部未导出' }}
+            </button>
+            <span class="export-tip" v-if="hasSelection">⚠️ 已切换为选中行导出模式</span>
+          </div>
+          <div class="export-action-right">
+            <div class="unexported-badge" :class="{ 'unexported-zero': unexportedTotal === 0 }">
+              <span class="unexported-badge-dot"></span>
+              <span class="unexported-badge-text">未导出: <strong>{{ unexportedTotal }}</strong> 条</span>
+            </div>
+            <button class="btn-action btn-refresh-unexported" @click="refreshTodayUnexported" :disabled="todayUnexportedLoading">
+              {{ todayUnexportedLoading ? '查询中...' : '🔄 刷新导出情况' }}
+            </button>
+            <div class="download-section-inline" v-if="exportFileReady">
+              <span class="download-file-name">📄 {{ exportFileName }}</span>
+              <button class="btn-action btn-download-sm" @click="doExportDownload">⬇ 下载文件</button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="exportResultMsg" class="feedback" :class="{ 'feedback-ok': exportResultSuccess, 'feedback-err': !exportResultSuccess }">
+          {{ exportResultMsg }}
+        </div>
+
+        <div v-if="exportPolling" class="polling-tip">
+          <div class="state-spinner" style="width:18px;height:18px;border-width:2px;margin:0;display:inline-block;vertical-align:middle;margin-right:8px;"></div>
+          文件生成中，请稍候...
+        </div>
+
+        <!-- 结果工具栏 -->
+        <div v-if="queried" class="result-toolbar">
+          <div class="result-toolbar-left">
+            <span class="result-count">共 <strong>{{ total }}</strong> 条 · 第 {{ currentPage }}/{{ totalPages }} 页</span>
+          </div>
+          <div class="result-toolbar-right">
+            <label class="batch-select-label" v-if="list.length > 0">
+              <input type="checkbox" :checked="isAllSelected()" @change="toggleSelectAll" />
+              <span>全选</span>
+            </label>
+            <span class="selected-count" v-if="selectedHashes.length > 0">已选 {{ selectedHashes.length }} 条</span>
+            <button class="btn-batch-del" v-if="selectedHashes.length > 0" @click="doBatchDelete" :disabled="batchDeleting">
+              {{ batchDeleting ? '删除中...' : '🗑 批量删除' }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="loading && !queried" class="state-block">
+          <div class="state-spinner"></div>
+          <div class="state-text">正在查询数据...</div>
+        </div>
+        <div v-if="!loading && queried && list.length === 0" class="state-block">
+          <div class="state-icon">404</div>
+          <div class="state-text">没有符合条件的数据</div>
+        </div>
+
+        <div v-if="list.length > 0" class="table-wrapper">
+          <table class="data-table">
+            <thead>
+            <tr>
+              <th class="th-check"><input type="checkbox" :checked="isAllSelected()" @change="toggleSelectAll" /></th>
+              <th>#</th><th>URL</th><th>Bundle ID</th><th>归因</th><th>事件数</th>
+              <th>异常类型</th><th>记录日期</th><th>记录人</th><th>备注</th><th>导出</th><th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <template v-for="(item, index) in list" :key="item.hash">
+              <tr :class="{ 'row-selected': selectedHashes.includes(item.hash), 'row-editing': editingRow === index }">
+                <td class="td-check"><input type="checkbox" :value="item.hash" v-model="selectedHashes" /></td>
+                <td class="cell-index">{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+                <td :title="item.URL" class="cell-url">
+                  <template v-if="editingRow === index"><input v-model="editBuffer.URL" class="cell-edit-input cell-edit-input-wide" /></template>
+                  <template v-else>{{ item.URL }}</template>
+                </td>
+                <td class="cell-mono">
+                  <template v-if="editingRow === index"><input v-model="editBuffer.bundleId" class="cell-edit-input" /></template>
+                  <template v-else>{{ item.bundleId }}</template>
+                </td>
+                <td>
+                  <template v-if="editingRow === index">
+                    <select v-model="editBuffer.ascribe" class="cell-edit-input">
+                      <option value="">无</option>
+                      <option v-for="opt in ATTR_OPTIONS" :key="opt" :value="opt">{{ opt }}</option>
+                    </select>
+                  </template>
+                  <template v-else>{{ item.ascribe || '-' }}</template>
+                </td>
+                <td class="cell-num">
+                  <template v-if="editingRow === index"><input v-model.number="editBuffer.event_number" type="number" class="cell-edit-input cell-edit-input-sm" /></template>
+                  <template v-else>{{ item.event_number }}</template>
+                </td>
+                <td>
+                  <template v-if="editingRow === index"><input v-model="editBuffer.exception_type" class="cell-edit-input" /></template>
+                  <template v-else>
+                    <span v-if="item.exception_type" class="exception-tag" :class="'ex-' + item.exception_type">{{ item.exception_type }}</span>
+                    <span v-else>-</span>
+                  </template>
+                </td>
+                <td>
+                  <template v-if="editingRow === index"><input v-model="editBuffer.record_data" class="cell-edit-input" /></template>
+                  <template v-else>{{ item.record_data || '-' }}</template>
+                </td>
+                <td>
+                  <template v-if="editingRow === index"><input v-model="editBuffer.recorder" class="cell-edit-input" /></template>
+                  <template v-else>{{ item.recorder || '-' }}</template>
+                </td>
+                <td :title="item.remark" class="cell-remark">
+                  <template v-if="editingRow === index"><input v-model="editBuffer.remark" class="cell-edit-input" /></template>
+                  <template v-else>{{ item.remark || '-' }}</template>
+                </td>
+                <td><span :class="item.isOutput === 1 ? 'tag-exported' : 'tag-unexported'">{{ item.isOutput === 1 ? '已导出' : '未导出' }}</span></td>
+                <td class="action-cell">
+                  <template v-if="editingRow === index">
+                    <button class="btn-sm btn-save" @click="saveEditRow(index)" :disabled="savingEdit">{{ savingEdit ? '...' : '✓' }}</button>
+                    <button class="btn-sm btn-cancel" @click="cancelEditRow">✕</button>
+                  </template>
+                  <template v-else>
+                    <button class="btn-sm btn-edit" @click="startEditRow(index)" title="编辑此行">✎</button>
+                  </template>
+                </td>
+              </tr>
+            </template>
+            </tbody>
+          </table>
+        </div>
+
+        <div v-if="total > 0" class="pagination">
+          <button class="page-btn" :disabled="currentPage <= 1" @click="prevPage">‹ 上一页</button>
+          <span class="page-info">第 {{ currentPage }} / {{ totalPages }} 页，共 {{ total }} 条</span>
+          <button class="page-btn" :disabled="currentPage >= totalPages" @click="nextPage">下一页 ›</button>
+          <label class="page-size-label">
+            每页
+            <input class="page-size-input" type="number" v-model="pageSizeInput" @keydown.enter="applyPageSize" @blur="applyPageSize" min="1" max="500" />
+            条
+          </label>
+        </div>
+
+        <div class="import-section">
+          <div class="import-toggle" @click="importExpanded = !importExpanded">
+            <span class="import-toggle-icon">{{ importExpanded ? '▼' : '▶' }}</span>
+            <span class="import-toggle-icon-emoji">📥</span>
+            <span class="import-toggle-text">一键导入数据（从WPS表格粘贴）</span>
+          </div>
+          <div v-if="importExpanded" class="import-body">
+            <div class="import-help">
+              <p>将 WPS 表格中的数据直接粘贴到下方输入框，系统会自动按 Tab 分隔解析为多条记录。</p>
+              <p>数据格式（Tab分隔）：<code>URL · bundleId · 归因 · 事件数 · 异常类型 · 日期 · 记录人 · 已冻结(可选)</code></p>
+              <p>导入的数据将自动设置 <code>isOutput = 1</code>（已导出），并自动生成唯一 hash。</p>
+            </div>
+            <textarea
+                v-model="importRawText"
+                class="import-textarea"
+                placeholder="在此粘贴WPS表格数据...&#10;例如：&#10;https://apps.apple.com/...	com.example	appflyer	35	正常	2026/8/27	张三&#10;https://apps.apple.com/...	com.example2		5	超过10分钟0上报	2026/8/27	李四	已冻结"
+                rows="8"
+            ></textarea>
+            <div class="import-actions">
+              <div class="import-hint" v-if="importRawText.trim()">
+                已检测到 <strong>{{ importRawText.split('\n').filter(l => l.trim()).length }}</strong> 行数据
+              </div>
+              <div class="import-btns">
+                <button class="btn-action btn-import-clear" @click="importRawText = ''; importMsg = ''; importResult = null" v-if="importRawText">
+                  清空
+                </button>
+                <button class="btn-action btn-import" @click="handleBatchImport" :disabled="importing || !importRawText.trim()">
+                  {{ importing ? '导入中...' : '📥 一键导入' }}
+                </button>
+              </div>
+            </div>
+            <div v-if="importMsg" class="feedback" :class="{ 'feedback-ok': importMsg.startsWith('✅'), 'feedback-err': importMsg.startsWith('❌') }">
+              {{ importMsg }}
+            </div>
+            <div v-if="importResult" class="import-result">
+              <div class="import-result-row">
+                <span class="import-result-label">总行数</span>
+                <span class="import-result-value">{{ importResult.totalLines }}</span>
+              </div>
+              <div class="import-result-row">
+                <span class="import-result-label">成功解析</span>
+                <span class="import-result-value import-result-ok">{{ importResult.parsedCount }} 条</span>
+              </div>
+              <div class="import-result-row">
+                <span class="import-result-label">入库成功</span>
+                <span class="import-result-value import-result-ok">{{ importResult.successCount }} 条</span>
+              </div>
+              <div v-if="importResult.errorCount > 0" class="import-result-row">
+                <span class="import-result-label">解析失败</span>
+                <span class="import-result-value import-result-bad">{{ importResult.errorCount }} 条</span>
+              </div>
+              <div v-if="importResult.errors && importResult.errors.length > 0" class="import-errors">
+                <div class="import-error-title">失败详情：</div>
+                <div v-for="(err, idx) in importResult.errors" :key="idx" class="import-error-item">{{ err }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <br/>
+        <br/>
+        <div @click="sup" class="sup-area">点我试试</div>
+      </template>
     </div>
 
     <!-- ==================== 用户管理 Tab ==================== -->
@@ -1144,6 +1302,26 @@ onUnmounted(() => {
 
 .admin-section { animation: fadeUp 0.3s ease; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ========== 图表区域 ========== */
+.charts-row { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; margin-bottom: 20px; }
+@media (max-width: 900px) { .charts-row { grid-template-columns: 1fr; } }
+.chart-card { background: #fff; border: 1px solid #eaeaea; border-radius: 14px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+.chart-card-wide { }
+.chart-canvas-wrap { position: relative; height: 320px; }
+
+/* ========== 行内编辑 ========== */
+.row-editing td { background: #fffbeb !important; }
+.cell-edit-input { padding: 4px 8px; font-size: 12px; border: 2px solid #667eea; border-radius: 6px; outline: none; width: 100%; box-sizing: border-box; background: #fff; transition: border-color 0.2s; }
+.cell-edit-input:focus { border-color: #764ba2; box-shadow: 0 0 0 2px rgba(102,126,234,0.15); }
+.cell-edit-input-wide { max-width: 240px; }
+.cell-edit-input-sm { width: 60px; }
+.btn-edit { background: linear-gradient(135deg, #60a5fa, #3b82f6); color: #fff; }
+.btn-edit:hover:not(:disabled) { box-shadow: 0 4px 12px rgba(59,130,246,0.4); }
+.btn-save { background: linear-gradient(135deg, #43e97b, #38f9d7); color: #fff; }
+.btn-save:hover:not(:disabled) { box-shadow: 0 4px 12px rgba(67,233,123,0.4); }
+.btn-cancel { background: linear-gradient(135deg, #f87171, #ef4444); color: #fff; }
+.btn-cancel:hover:not(:disabled) { box-shadow: 0 4px 12px rgba(239,68,68,0.4); }
 
 /* ========== 通用卡片 ========== */
 .card { background: #fff; border-radius: 14px; padding: 0; margin-bottom: 20px; border: 1px solid #eaeaea; box-shadow: 0 1px 4px rgba(0,0,0,0.04); overflow: hidden; }
