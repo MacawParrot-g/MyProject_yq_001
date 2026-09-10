@@ -25,10 +25,6 @@ import {
 
 import { Chart, registerables } from 'chart.js'
 Chart.register(...registerables)
-
-import AuditLogPanel from './AuditLogPanel.vue'
-import ScheduledTaskPanel from './ScheduledTaskPanel.vue'
-import NotificationManager from './NotificationManager.vue'
 const emit = defineEmits(['error'])
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
 const advFilters = reactive({
@@ -730,6 +726,17 @@ onMounted(() => {
   loadStats()
   startUserPolling()
   startUnexportedPolling()
+})
+
+watch(activeTab, async (newTab) => {
+  if (newTab === 'report') {
+    await nextTick()
+    if (summaryData.value || recorderSummary.value.length > 0) {
+      renderCharts()
+    } else {
+      fetchData(true)
+    }
+  }
 })
 
 onUnmounted(() => {
