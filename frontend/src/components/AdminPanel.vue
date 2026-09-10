@@ -20,7 +20,10 @@ import {
   fetchUnexportedByUser,
   fetchExportStatus,
   getExportDownloadUrl,
-  updateRecord
+  updateRecord,
+  adminAppIdLookup,
+  adminAppIdSave,
+  fetchEvent
 } from '../api/index.js'
 
 import { Chart, registerables } from 'chart.js'
@@ -41,12 +44,19 @@ const recorderSummary = ref([])
 const editingRow = ref(null)
 const editBuffer = reactive({})
 const savingEdit = ref(false)
-
 let chartInstances = []
 const ATTR_COLORS = ['#22c55e', '#f59e0b', '#3b82f6', '#a855f7']
 const ATTR_COLORS_LIGHT = ['rgba(34,197,94,0.7)', 'rgba(245,158,11,0.7)', 'rgba(59,130,246,0.7)', 'rgba(168,85,247,0.7)']
 const RECORDER_COLORS = ['#6366f1', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6', '#06b6d4', '#ef4444', '#84cc16']
 // ... existing code ...
+
+const appIdMode = ref('local')
+const appIdBundleId = ref('')
+const appIdLoading = ref(false)
+const appIdResult = ref(null)
+const appIdOnlineResult = ref(null)
+const appIdSaving = ref(false)
+const appIdSaveMsg = ref('')
 
 let attrPieChart = null
 let recorderBarChart = null
@@ -403,6 +413,40 @@ function renderCharts() {
 function destroyCharts() {
   chartInstances.forEach(c => { try { c.destroy() } catch(e) {} })
   chartInstances = []
+}
+
+async function doAppIdLookup() {
+  const bid = appIdBundleId.value.trim()
+  if (!bid) { emit('error', '请输入 Bundle ID'); return }
+  appIdLoading.value = true
+  appIdResult.value = null
+  appIdOnlineResult.value = null
+  appIdSaveMsg.value = ''
+  try {
+    if (appIdMode.value === 'local') {
+      const json = await adminAppIdLookup(bid)
+      if (json.success) {
+        appIdResult.value = json.data
+      } else {
+        emit('error', json.message || '查询失败')
+      }
+    } else {
+      const json = await fetchEvent(bid)
+      if (json && json.success && json.data) {
+        appIdOnlineResult.value = json.data
+        if (json.data.bundleId && json.data.appId) {
+          const saveJson = await adminAppIdSave(json.data.bundleId, json.data.appId)
+          appIdSaveMsg.value = saveJson.message || (saveJson.success ? '已同步到本地数据库' : '同步失败')
+        }
+      } else {
+        emit('error', (json && json.resultMsg) || '联网搜索未返回有效数据')
+      }
+    }
+  } catch (e) {
+    emit('error', '查询失败：' + e.message)
+  } finally {
+    appIdLoading.value = false
+  }
 }
 
 function startEditRow(index) {
@@ -816,6 +860,12 @@ function stopUserPolling() {
   }
 }
 
+
+function formatAppIdTime(timeStr) {
+  if (!timeStr) return '-'
+  return timeStr.replace('T', ' ').substring(0, 19)
+}
+
 async function loadSystemInfo() {
   sysLoading.value = true
   try {
@@ -865,6 +915,9 @@ onUnmounted(() => {
       </button>
       <button class="admin-tab" :class="{ active: activeTab === 'management' }" @click="activeTab = 'management'">
         <span class="tab-icon">D</span><span class="tab-text">数据管理</span>
+      </button>
+      <button class="admin-tab" :class="{ active: activeTab === 'appid' }" @click="activeTab = 'appid'">
+        <span class="tab-icon">A</span><span class="tab-text">App信息</span>
       </button>
       <button class="admin-tab" :class="{ active: activeTab === 'users' }" @click="activeTab = 'users'">
         <span class="tab-icon">U</span><span class="tab-text">用户管理</span>
@@ -982,84 +1035,6 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
-
-      <!-- 高级搜索面板（共享） -->
-<!--      <div class="filter-card">-->
-<!--        <div class="filter-top-row">-->
-<!--          <div class="filter-section">-->
-<!--            <div class="filter-section-title">归因筛选</div>-->
-<!--            <div class="radio-group">-->
-<!--              <label class="radio-tag radio-all" :class="{ active: selectedAscribe === '' }">-->
-<!--                <input type="radio" name="adminAscribe" value="" :checked="selectedAscribe === ''" @change="selectedAscribe = ''" />-->
-<!--                <span>全部</span>-->
-<!--              </label>-->
-<!--              <label v-for="opt in ATTR_OPTIONS" :key="opt" class="radio-tag" :class="[opt, { active: selectedAscribe === opt }]">-->
-<!--                <input type="radio" name="adminAscribe" :value="opt" :checked="selectedAscribe === opt" @change="selectedAscribe = opt" />-->
-<!--                <span>{{ opt }}</span>-->
-<!--              </label>-->
-<!--            </div>-->
-<!--          </div>-->
-<!--          <div class="filter-top-actions">-->
-<!--            <label class="checkbox-tag" :class="{ active: frozenOnly }">-->
-<!--              <input type="checkbox" v-model="frozenOnly" />-->
-<!--              <span>仅冻结</span>-->
-<!--            </label>-->
-<!--            <button class="btn-link" @click="advExpanded = !advExpanded">-->
-<!--              {{ advExpanded ? '收起筛选 ▲' : '展开筛选 ▼' }}-->
-<!--            </button>-->
-<!--          </div>-->
-<!--        </div>-->
-
-<!--        <div v-if="advExpanded" class="filter-advanced">-->
-<!--          <div class="filter-grid">-->
-<!--            <div class="filter-field">-->
-<!--              <label class="field-label">起始日期</label>-->
-<!--              <input v-model="advFilters.dateFrom" type="date" class="filter-input filter-date" />-->
-<!--            </div>-->
-<!--            <div class="filter-field">-->
-<!--              <label class="field-label">结束日期</label>-->
-<!--              <input v-model="advFilters.dateTo" type="date" class="filter-input filter-date" />-->
-<!--            </div>-->
-<!--            <div class="filter-field">-->
-<!--              <label class="field-label">Bundle ID</label>-->
-<!--              <input v-model="advFilters.bundleId" class="filter-input" placeholder="精确匹配" @keyup.enter="fetchData(true)" />-->
-<!--            </div>-->
-<!--            <div class="filter-field">-->
-<!--              <label class="field-label">关键词</label>-->
-<!--              <input v-model="advFilters.keyword" class="filter-input" placeholder="URL/Bundle/备注" @keyup.enter="fetchData(true)" />-->
-<!--            </div>-->
-<!--            <div class="filter-field">-->
-<!--              <label class="field-label">异常类型</label>-->
-<!--              <select v-model="advFilters.exceptionType" class="filter-input">-->
-<!--                <option value="">全部</option>-->
-<!--                <option v-for="opt in exceptionOptions" :key="opt" :value="opt">{{ opt }}</option>-->
-<!--              </select>-->
-<!--            </div>-->
-<!--            <div class="filter-field">-->
-<!--              <label class="field-label">记录人</label>-->
-<!--              <select v-model="advFilters.recorder" class="filter-input">-->
-<!--                <option value="">全部</option>-->
-<!--                <option v-for="opt in recorderOptions" :key="opt" :value="opt">{{ opt }}</option>-->
-<!--              </select>-->
-<!--            </div>-->
-<!--            <div class="filter-field">-->
-<!--              <label class="field-label">导出状态</label>-->
-<!--              <select v-model="advFilters.isOutput" class="filter-input">-->
-<!--                <option :value="null">全部</option>-->
-<!--                <option :value="1">已导出</option>-->
-<!--                <option :value="0">未导出</option>-->
-<!--              </select>-->
-<!--            </div>-->
-<!--          </div>-->
-<!--          <div class="filter-action-row">-->
-<!--            <button class="btn-query" @click="fetchData(true)" :disabled="loading">-->
-<!--              {{ loading ? '查询中...' : '🔍 查询' }}-->
-<!--            </button>-->
-<!--            <button class="btn-reset" @click="resetFilters">↻ 重置</button>-->
-<!--            <span class="filter-tip">支持回车键快速查询</span>-->
-<!--          </div>-->
-<!--        </div>-->
-<!--      </div>-->
 
       <!-- ==================== 数据报表 Tab 内容 ==================== -->
       <template v-if="activeTab === 'report'">
@@ -1382,6 +1357,152 @@ onUnmounted(() => {
       </template>
     </div>
 
+
+    <!-- ==================== App信息 Tab ==================== -->
+    <template v-if="activeTab === 'appid'">
+    <div class="admin-section">
+      <div class="appid-lookup-card">
+        <div class="appid-lookup-header">
+          <span class="appid-lookup-icon">📱</span>
+          <div>
+            <h3 class="appid-lookup-title">App 信息查询</h3>
+            <p class="appid-lookup-desc">通过 Bundle ID 查询 App 信息，支持本地库和联网两种模式</p>
+          </div>
+        </div>
+
+        <div class="appid-mode-switch">
+          <button class="appid-mode-btn" :class="{ active: appIdMode === 'local' }" @click="appIdMode = 'local'">
+            <span class="appid-mode-icon">🏠</span>
+            <div class="appid-mode-text">
+              <span class="appid-mode-name">本地库获取</span>
+              <span class="appid-mode-desc">仅返回 AppId · 优先 Redis → MySQL</span>
+            </div>
+          </button>
+          <button class="appid-mode-btn" :class="{ active: appIdMode === 'online' }" @click="appIdMode = 'online'">
+            <span class="appid-mode-icon">🌐</span>
+            <div class="appid-mode-text">
+              <span class="appid-mode-name">联网搜索</span>
+              <span class="appid-mode-desc">返回完整信息 · 自动同步到本地库</span>
+            </div>
+          </button>
+        </div>
+
+        <div class="appid-search-row">
+          <input v-model="appIdBundleId" class="appid-search-input" placeholder="输入 Bundle ID，例如 com.game.hero.survival" @keyup.enter="doAppIdLookup" />
+          <button class="appid-search-btn" @click="doAppIdLookup" :disabled="appIdLoading">
+            {{ appIdLoading ? '查询中...' : '🔍 查询' }}
+          </button>
+        </div>
+
+        <div v-if="appIdLoading" class="state-block">
+          <div class="state-spinner"></div>
+          <div class="state-text">正在查询...</div>
+        </div>
+
+        <div v-if="appIdMode === 'local' && appIdResult" class="appid-result-card">
+          <div v-if="appIdResult.found" class="appid-result-found">
+            <div class="appid-result-badge" :class="appIdResult.source === 'Redis' ? 'badge-redis' : 'badge-mysql'">
+              {{ appIdResult.source === 'Redis' ? '⚡ Redis 命中' : '🗄️ MySQL 查询' }}
+            </div>
+            <div class="appid-result-grid">
+              <div class="appid-result-field">
+                <span class="appid-field-label">Bundle ID</span>
+                <span class="appid-field-value appid-field-mono">{{ appIdResult.bundleId }}</span>
+              </div>
+              <div class="appid-result-field">
+                <span class="appid-field-label">App ID</span>
+                <span class="appid-field-value appid-field-highlight">{{ appIdResult.appId }}</span>
+              </div>
+              <div class="appid-result-field">
+                <span class="appid-field-label">数据来源</span>
+                <span class="appid-field-value">{{ appIdResult.source }}</span>
+              </div>
+            </div>
+            <div v-if="appIdResult.source === 'MySQL'" class="appid-cache-hint">
+              ⚡ 已将此条 AppId 缓存到 Redis，下次查询将直接命中 Redis
+            </div>
+          </div>
+          <div v-else class="appid-result-notfound">
+            <div class="appid-notfound-icon">🔍</div>
+            <div class="appid-notfound-text">本地库中未找到该 Bundle ID 对应的 AppId</div>
+            <div class="appid-notfound-hint">请切换到「联网搜索」模式从远端获取</div>
+          </div>
+        </div>
+
+        <div v-if="appIdMode === 'online' && appIdOnlineResult" class="appid-online-card">
+          <div class="appid-online-header">
+            <span class="appid-online-status" :class="appIdOnlineResult.status === 0 ? 'status-active' : 'status-inactive'">
+              {{ appIdOnlineResult.status === 0 ? '● 活跃' : '○ 非活跃' }}
+            </span>
+            <span class="appid-online-id">ID: {{ appIdOnlineResult.id }}</span>
+          </div>
+          <div class="appid-online-grid">
+            <div class="appid-online-field">
+              <span class="appid-online-label">Bundle ID</span>
+              <span class="appid-online-value appid-field-mono">{{ appIdOnlineResult.bundleId }}</span>
+            </div>
+            <div class="appid-online-field">
+              <span class="appid-online-label">App ID</span>
+              <span class="appid-online-value appid-field-highlight">{{ appIdOnlineResult.appId }}</span>
+            </div>
+            <div class="appid-online-field">
+              <span class="appid-online-label">平台</span>
+              <span class="appid-online-value">{{ appIdOnlineResult.platform || '未指定' }}</span>
+            </div>
+            <div class="appid-online-field">
+              <span class="appid-online-label">类型</span>
+              <span class="appid-online-value">{{ appIdOnlineResult.type === 1 ? 'iOS' : appIdOnlineResult.type === 2 ? 'Android' : '未知' }}</span>
+            </div>
+            <div class="appid-online-field">
+              <span class="appid-online-label">事件目标数</span>
+              <span class="appid-online-value">{{ appIdOnlineResult.eventTokenTargetNum }}</span>
+            </div>
+            <div class="appid-online-field">
+              <span class="appid-online-label">当前事件数</span>
+              <span class="appid-online-value">{{ appIdOnlineResult.currentTargetNum }}</span>
+            </div>
+            <div class="appid-online-field">
+              <span class="appid-online-label">添加次数</span>
+              <span class="appid-online-value">{{ appIdOnlineResult.addTimes }}</span>
+            </div>
+            <div class="appid-online-field">
+              <span class="appid-online-label">事件类型</span>
+              <span class="appid-online-value">{{ appIdOnlineResult.playEventType }}</span>
+            </div>
+            <div class="appid-online-field appid-online-field-wide">
+              <span class="appid-online-label">下载链接</span>
+              <span class="appid-online-value appid-field-mono appid-field-link">
+                <a v-if="appIdOnlineResult.downloadUrl" :href="appIdOnlineResult.downloadUrl" target="_blank" rel="noopener">{{ appIdOnlineResult.downloadUrl }}</a>
+                <span v-else>-</span>
+              </span>
+            </div>
+            <div class="appid-online-field">
+              <span class="appid-online-label">创建时间</span>
+              <span class="appid-online-value">{{ formatAppIdTime(appIdOnlineResult.createTime) }}</span>
+            </div>
+            <div class="appid-online-field">
+              <span class="appid-online-label">更新时间</span>
+              <span class="appid-online-value">{{ formatAppIdTime(appIdOnlineResult.updateTime) }}</span>
+            </div>
+            <div class="appid-online-field">
+              <span class="appid-online-label">申请时间</span>
+              <span class="appid-online-value">{{ formatAppIdTime(appIdOnlineResult.applyTime) }}</span>
+            </div>
+            <div class="appid-online-field">
+              <span class="appid-online-label">过期时间</span>
+              <span class="appid-online-value">{{ formatAppIdTime(appIdOnlineResult.expireTime) }}</span>
+            </div>
+          </div>
+          <div v-if="appIdSaveMsg" class="appid-sync-msg" :class="{ 'appid-sync-ok': appIdSaveMsg.startsWith('✅') || appIdSaveMsg.includes('已存在'), 'appid-sync-err': appIdSaveMsg.startsWith('❌') }">
+            {{ appIdSaveMsg }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+    
+    
+
     <!-- ==================== 用户管理 Tab ==================== -->
     <div v-if="activeTab === 'users'" class="admin-section">
 
@@ -1523,7 +1644,78 @@ onUnmounted(() => {
   </div>
 </template>
 
-<style scoped>/* ========== 页面骨架 ========== */
+<style scoped>
+
+/* ========== App信息查询 ========== */
+.appid-lookup-card { background: #fff; border: 1px solid #eaeaea; border-radius: 16px; padding: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.appid-lookup-header { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 24px; }
+.appid-lookup-icon { font-size: 32px; line-height: 1; }
+.appid-lookup-title { margin: 0; font-size: 18px; font-weight: 700; color: #1a1a2e; }
+.appid-lookup-desc { margin: 4px 0 0; font-size: 12px; color: #999; }
+
+.appid-mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.appid-mode-btn { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 2px solid #e8eaef; border-radius: 12px; background: #fafbfc; cursor: pointer; transition: all 0.25s; text-align: left; }
+.appid-mode-btn:hover { border-color: #c7d2fe; background: #f5f7ff; }
+.appid-mode-btn.active { border-color: #6366f1; background: #eef2ff; box-shadow: 0 2px 12px rgba(99,102,241,0.12); }
+.appid-mode-icon { font-size: 24px; flex-shrink: 0; }
+.appid-mode-text { display: flex; flex-direction: column; gap: 2px; }
+.appid-mode-name { font-size: 14px; font-weight: 700; color: #333; }
+.appid-mode-desc { font-size: 11px; color: #999; }
+.appid-mode-btn.active .appid-mode-name { color: #4338ca; }
+.appid-mode-btn.active .appid-mode-desc { color: #6366f1; }
+
+.appid-search-row { display: flex; gap: 12px; margin-bottom: 20px; }
+.appid-search-input { flex: 1; padding: 12px 16px; font-size: 14px; border: 2px solid #e0e0e0; border-radius: 12px; outline: none; transition: border-color 0.2s; font-family: 'SF Mono', 'Cascadia Code', monospace; }
+.appid-search-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.appid-search-input::placeholder { color: #bbb; font-family: inherit; }
+.appid-search-btn { padding: 12px 28px; font-size: 14px; font-weight: 700; border: none; border-radius: 12px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.appid-search-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(99,102,241,0.35); }
+.appid-search-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.appid-result-card { animation: fadeUp 0.3s ease; }
+.appid-result-found { padding: 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; }
+.appid-result-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-bottom: 16px; }
+.badge-redis { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.badge-mysql { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+
+.appid-result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 700px) { .appid-result-grid { grid-template-columns: 1fr; } }
+.appid-result-field { display: flex; flex-direction: column; gap: 4px; background: #fff; padding: 12px 16px; border-radius: 10px; border: 1px solid #e8eaef; }
+.appid-field-label { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.3px; }
+.appid-field-value { font-size: 16px; font-weight: 700; color: #333; word-break: break-all; }
+.appid-field-mono { font-family: 'SF Mono', 'Cascadia Code', monospace; font-size: 13px !important; }
+.appid-field-highlight { color: #4338ca; font-size: 20px !important; }
+.appid-field-link a { color: #6366f1; text-decoration: none; word-break: break-all; font-size: 12px; }
+.appid-field-link a:hover { text-decoration: underline; }
+
+.appid-cache-hint { margin-top: 12px; padding: 8px 14px; background: #fefce8; border: 1px solid #fef08a; border-radius: 8px; font-size: 12px; color: #854d0e; font-weight: 600; }
+
+.appid-result-notfound { padding: 32px 20px; text-align: center; background: #fef2f2; border: 1px solid #fecaca; border-radius: 14px; }
+.appid-notfound-icon { font-size: 36px; margin-bottom: 8px; }
+.appid-notfound-text { font-size: 15px; font-weight: 700; color: #991b1b; margin-bottom: 4px; }
+.appid-notfound-hint { font-size: 12px; color: #b91c1c; }
+
+.appid-online-card { animation: fadeUp 0.3s ease; background: #fff; border: 1px solid #e0e7ff; border-radius: 14px; padding: 20px; }
+.appid-online-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0; }
+.appid-online-status { font-size: 12px; font-weight: 700; padding: 3px 12px; border-radius: 20px; }
+.status-active { background: #dcfce7; color: #166534; }
+.status-inactive { background: #f4f5f7; color: #999; }
+.appid-online-id { font-size: 12px; color: #999; font-weight: 600; }
+
+.appid-online-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+@media (max-width: 1100px) { .appid-online-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 700px) { .appid-online-grid { grid-template-columns: repeat(2, 1fr); } }
+.appid-online-field { background: #f8f9fc; padding: 10px 14px; border-radius: 10px; border: 1px solid #e8eaef; display: flex; flex-direction: column; gap: 4px; }
+.appid-online-field-wide { grid-column: span 2; }
+@media (max-width: 700px) { .appid-online-field-wide { grid-column: span 2; } }
+.appid-online-label { font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.3px; }
+.appid-online-value { font-size: 13px; font-weight: 600; color: #333; word-break: break-all; }
+
+.appid-sync-msg { margin-top: 16px; padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; text-align: center; }
+.appid-sync-ok { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.appid-sync-err { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+/* ========== 页面骨架 ========== */
 .admin-page { width: 100%; max-width: 1600px; margin: 0 auto; padding: 0 20px 40px; box-sizing: border-box; }
 .page-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #f0f0f0; }
 .page-header h2 { margin: 0; font-size: 22px; color: #1a1a2e; font-weight: 700; }
