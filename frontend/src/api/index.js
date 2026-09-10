@@ -495,4 +495,12 @@ export function deleteNotification(id) {
     return fetchWithTimeout('/api/notification/delete?id=' + id, { method: 'DELETE' }, 15000).then(safeJson)
 }
 
+export function adminRecordSummaryByRecorder(params) {
+    return fetchWithTimeout('/api/admin/record/summary-by-recorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params)
+    }, 30000).then(safeJson)
+}
+
 
