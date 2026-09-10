@@ -503,4 +503,16 @@ export function adminRecordSummaryByRecorder(params) {
     }, 30000).then(safeJson)
 }
 
+export function adminAppIdLookup(bundleId) {
+    return fetchWithTimeout('/api/admin/record/appid/lookup?bundleId=' + encodeURIComponent(bundleId), {}, 15000).then(safeJson)
+}
+
+export function adminAppIdSave(bundleId, appId) {
+    return fetchWithTimeout('/api/admin/record/appid/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bundleId, appId })
+    }, 15000).then(safeJson)
+}
+
 
