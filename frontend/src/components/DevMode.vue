@@ -871,6 +871,7 @@ async function saveToMySQL() {
     const json = await insertRecord({
       URL: downloadUrl.value,
       bundleId: bundleId.value,
+      appId: appIds.value,
       ascribe: (attributions.value || []).join(';'),
       event_number: newCurrentTargetNum.value,
       exception_type: form.exception_type.trim(),
