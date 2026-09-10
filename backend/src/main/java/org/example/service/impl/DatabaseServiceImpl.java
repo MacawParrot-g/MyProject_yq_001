@@ -248,12 +248,13 @@ public class DatabaseServiceImpl implements DatabaseService, CommandLineRunner {
 
     @Override
     public void submitRecordAsync(TestStatic record) {
+        boolean appIdDuplicate = false;
         if (record.getAppId() != null && appIdService.isAppIdExists(record.getAppId())) {
-            log.info("⛔ appid去重拦截，跳过入库: appId={}, bundleId={}", record.getAppId(), record.getBundleId());
-            return;
+            appIdDuplicate = true;
+            log.info("⚠️ appid已存在，跳过appid表写入，但test_static正常入库: appId={}, bundleId={}", record.getAppId(), record.getBundleId());
         }
 
-        if (record.getAppId() != null && record.getBundleId() != null) {
+        if (!appIdDuplicate && record.getAppId() != null && record.getBundleId() != null) {
             appIdService.saveAppId(record.getBundleId(), record.getAppId());
         }
 
