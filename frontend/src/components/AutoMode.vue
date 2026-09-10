@@ -497,7 +497,7 @@
   .timer-left {
     min-width: auto;
   }
-}
+
 </* ========== 评级详情弹窗 ========== */
 .grade-detail-overlay {
   position: fixed;
@@ -587,7 +587,7 @@
 .grade-detail-d .grade-detail-footer .btn-cancel { border-color: #fca5a5; color: #991b1b; }
 .grade-detail-footer .btn-cancel:hover { background: rgba(255,255,255,0.9); }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }}
 </style>
 <script setup>import { ref, reactive, onMounted, watch, nextTick, onUnmounted } from 'vue'
 import QRCode from 'qrcode'
