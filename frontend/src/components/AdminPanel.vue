@@ -874,39 +874,6 @@ onUnmounted(() => {
     <!-- ==================== 数据报表 + 数据管理 共享区域 ==================== -->
     <div v-if="activeTab === 'report' || activeTab === 'management'" class="admin-section">
 
-      <!-- 顶部统计卡片 -->
-      <div class="stats-row" v-if="statsData">
-        <div class="stat-card">
-          <div class="stat-card-icon">T</div>
-          <div class="stat-card-body">
-            <div class="stat-card-value">{{ statsData.totalCount }}</div>
-            <div class="stat-card-label">总记录数</div>
-          </div>
-        </div>
-        <div class="stat-card stat-card-exported">
-          <div class="stat-card-icon">HE</div>
-          <div class="stat-card-body">
-            <div class="stat-card-value">{{ statsData.exportedCount }}</div>
-            <div class="stat-card-label">已导出</div>
-          </div>
-        </div>
-        <div class="stat-card stat-card-pending">
-          <div class="stat-card-icon">UE</div>
-          <div class="stat-card-body">
-            <div class="stat-card-value">{{ statsData.unexportedCount }}</div>
-            <div class="stat-card-label">未导出</div>
-          </div>
-        </div>
-        <div class="stat-card stat-card-frozen">
-          <div class="stat-card-icon">❄</div>
-          <div class="stat-card-body">
-            <div class="stat-card-value">{{ statsData.frozenCount }}</div>
-            <div class="stat-card-label">已冻结</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 高级搜索面板（共享） -->
       <div class="filter-card">
         <div class="filter-top-row">
           <div class="filter-section">
@@ -983,6 +950,116 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
+
+      <!-- 顶部统计卡片 -->
+      <div class="stats-row" v-if="statsData">
+        <div class="stat-card">
+          <div class="stat-card-icon">T</div>
+          <div class="stat-card-body">
+            <div class="stat-card-value">{{ statsData.totalCount }}</div>
+            <div class="stat-card-label">总记录数</div>
+          </div>
+        </div>
+        <div class="stat-card stat-card-exported">
+          <div class="stat-card-icon">HE</div>
+          <div class="stat-card-body">
+            <div class="stat-card-value">{{ statsData.exportedCount }}</div>
+            <div class="stat-card-label">已导出</div>
+          </div>
+        </div>
+        <div class="stat-card stat-card-pending">
+          <div class="stat-card-icon">UE</div>
+          <div class="stat-card-body">
+            <div class="stat-card-value">{{ statsData.unexportedCount }}</div>
+            <div class="stat-card-label">未导出</div>
+          </div>
+        </div>
+        <div class="stat-card stat-card-frozen">
+          <div class="stat-card-icon">❄</div>
+          <div class="stat-card-body">
+            <div class="stat-card-value">{{ statsData.frozenCount }}</div>
+            <div class="stat-card-label">已冻结</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 高级搜索面板（共享） -->
+<!--      <div class="filter-card">-->
+<!--        <div class="filter-top-row">-->
+<!--          <div class="filter-section">-->
+<!--            <div class="filter-section-title">归因筛选</div>-->
+<!--            <div class="radio-group">-->
+<!--              <label class="radio-tag radio-all" :class="{ active: selectedAscribe === '' }">-->
+<!--                <input type="radio" name="adminAscribe" value="" :checked="selectedAscribe === ''" @change="selectedAscribe = ''" />-->
+<!--                <span>全部</span>-->
+<!--              </label>-->
+<!--              <label v-for="opt in ATTR_OPTIONS" :key="opt" class="radio-tag" :class="[opt, { active: selectedAscribe === opt }]">-->
+<!--                <input type="radio" name="adminAscribe" :value="opt" :checked="selectedAscribe === opt" @change="selectedAscribe = opt" />-->
+<!--                <span>{{ opt }}</span>-->
+<!--              </label>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          <div class="filter-top-actions">-->
+<!--            <label class="checkbox-tag" :class="{ active: frozenOnly }">-->
+<!--              <input type="checkbox" v-model="frozenOnly" />-->
+<!--              <span>仅冻结</span>-->
+<!--            </label>-->
+<!--            <button class="btn-link" @click="advExpanded = !advExpanded">-->
+<!--              {{ advExpanded ? '收起筛选 ▲' : '展开筛选 ▼' }}-->
+<!--            </button>-->
+<!--          </div>-->
+<!--        </div>-->
+
+<!--        <div v-if="advExpanded" class="filter-advanced">-->
+<!--          <div class="filter-grid">-->
+<!--            <div class="filter-field">-->
+<!--              <label class="field-label">起始日期</label>-->
+<!--              <input v-model="advFilters.dateFrom" type="date" class="filter-input filter-date" />-->
+<!--            </div>-->
+<!--            <div class="filter-field">-->
+<!--              <label class="field-label">结束日期</label>-->
+<!--              <input v-model="advFilters.dateTo" type="date" class="filter-input filter-date" />-->
+<!--            </div>-->
+<!--            <div class="filter-field">-->
+<!--              <label class="field-label">Bundle ID</label>-->
+<!--              <input v-model="advFilters.bundleId" class="filter-input" placeholder="精确匹配" @keyup.enter="fetchData(true)" />-->
+<!--            </div>-->
+<!--            <div class="filter-field">-->
+<!--              <label class="field-label">关键词</label>-->
+<!--              <input v-model="advFilters.keyword" class="filter-input" placeholder="URL/Bundle/备注" @keyup.enter="fetchData(true)" />-->
+<!--            </div>-->
+<!--            <div class="filter-field">-->
+<!--              <label class="field-label">异常类型</label>-->
+<!--              <select v-model="advFilters.exceptionType" class="filter-input">-->
+<!--                <option value="">全部</option>-->
+<!--                <option v-for="opt in exceptionOptions" :key="opt" :value="opt">{{ opt }}</option>-->
+<!--              </select>-->
+<!--            </div>-->
+<!--            <div class="filter-field">-->
+<!--              <label class="field-label">记录人</label>-->
+<!--              <select v-model="advFilters.recorder" class="filter-input">-->
+<!--                <option value="">全部</option>-->
+<!--                <option v-for="opt in recorderOptions" :key="opt" :value="opt">{{ opt }}</option>-->
+<!--              </select>-->
+<!--            </div>-->
+<!--            <div class="filter-field">-->
+<!--              <label class="field-label">导出状态</label>-->
+<!--              <select v-model="advFilters.isOutput" class="filter-input">-->
+<!--                <option :value="null">全部</option>-->
+<!--                <option :value="1">已导出</option>-->
+<!--                <option :value="0">未导出</option>-->
+<!--              </select>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          <div class="filter-action-row">-->
+<!--            <button class="btn-query" @click="fetchData(true)" :disabled="loading">-->
+<!--              {{ loading ? '查询中...' : '🔍 查询' }}-->
+<!--            </button>-->
+<!--            <button class="btn-reset" @click="resetFilters">↻ 重置</button>-->
+<!--            <span class="filter-tip">支持回车键快速查询</span>-->
+<!--          </div>-->
+<!--        </div>-->
+<!--      </div>-->
 
       <!-- ==================== 数据报表 Tab 内容 ==================== -->
       <template v-if="activeTab === 'report'">
