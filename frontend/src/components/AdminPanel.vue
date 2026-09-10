@@ -254,29 +254,29 @@ function renderCharts() {
     }))
   }
 
-  const exportPie = document.getElementById('exportPieChart')
-  if (exportPie) {
-    const exported = summaryData.value.totalCount - (summaryData.value.totalCount - (summaryData.value.totalCount > 0 ? Math.round(summaryData.value.totalCount * (statsData.value?.exportedCount || 0) / (statsData.value?.totalCount || 1)) : 0))
-    chartInstances.push(new Chart(exportPie, {
-      type: 'doughnut',
-      data: {
-        labels: ['已导出', '未导出'],
-        datasets: [{
-          data: [summaryData.value.totalCount > 0 ? Math.round(summaryData.value.totalCount * ((statsData.value?.exportedCount || 0) / Math.max(statsData.value?.totalCount || 1, 1))) : 0,
-            summaryData.value.totalCount - Math.round(summaryData.value.totalCount * ((statsData.value?.exportedCount || 0) / Math.max(statsData.value?.totalCount || 1, 1)))],
-          backgroundColor: ['#22c55e', '#fbbf24'],
-          borderWidth: 3, borderColor: '#fff', hoverOffset: 8
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false, cutout: '55%',
-        plugins: {
-          legend: { position: 'bottom', labels: { padding: 14, font: { size: 11, weight: '600' }, usePointStyle: true, pointStyle: 'circle' } },
-          title: { display: true, text: '导出状态分布', font: { size: 14, weight: '700' }, color: '#1a1a2e', padding: { bottom: 8 } }
-        }
-      }
-    }))
-  }
+  // const exportPie = document.getElementById('exportPieChart')
+  // if (exportPie) {
+  //   const exported = summaryData.value.totalCount - (summaryData.value.totalCount - (summaryData.value.totalCount > 0 ? Math.round(summaryData.value.totalCount * (statsData.value?.exportedCount || 0) / (statsData.value?.totalCount || 1)) : 0))
+  //   chartInstances.push(new Chart(exportPie, {
+  //     type: 'doughnut',
+  //     data: {
+  //       labels: ['已导出', '未导出'],
+  //       datasets: [{
+  //         data: [summaryData.value.totalCount > 0 ? Math.round(summaryData.value.totalCount * ((statsData.value?.exportedCount || 0) / Math.max(statsData.value?.totalCount || 1, 1))) : 0,
+  //           summaryData.value.totalCount - Math.round(summaryData.value.totalCount * ((statsData.value?.exportedCount || 0) / Math.max(statsData.value?.totalCount || 1, 1)))],
+  //         backgroundColor: ['#22c55e', '#fbbf24'],
+  //         borderWidth: 3, borderColor: '#fff', hoverOffset: 8
+  //       }]
+  //     },
+  //     options: {
+  //       responsive: true, maintainAspectRatio: false, cutout: '55%',
+  //       plugins: {
+  //         legend: { position: 'bottom', labels: { padding: 14, font: { size: 11, weight: '600' }, usePointStyle: true, pointStyle: 'circle' } },
+  //         title: { display: true, text: '导出状态分布', font: { size: 14, weight: '700' }, color: '#1a1a2e', padding: { bottom: 8 } }
+  //       }
+  //     }
+  //   }))
+  // }
 
   if (recorderSummary.value.length > 0) {
     const barCtx = document.getElementById('recorderBarChart')
@@ -333,43 +333,43 @@ function renderCharts() {
       }))
     }
 
-    const radarCtx = document.getElementById('radarChart')
-    if (radarCtx && recorderSummary.value.length >= 3) {
-      const maxTotal = Math.max(...recorderSummary.value.map(r => r.totalCount))
-      const maxQualified = Math.max(...recorderSummary.value.map(r => r.qualifiedCount))
-      chartInstances.push(new Chart(radarCtx, {
-        type: 'radar',
-        data: {
-          labels: ['工作量', '合格数', '合格率', 'appflyer', 'adjust', 'singular', 'tenjin'],
-          datasets: recorderSummary.value.slice(0, 6).map((r, i) => {
-            const maxAttr = Math.max(...ATTR_OPTIONS.map(a => r.attributions[a])) || 1
-            return {
-              label: r.recorder,
-              data: [
-                maxTotal > 0 ? Math.round(r.totalCount * 100 / maxTotal) : 0,
-                maxQualified > 0 ? Math.round(r.qualifiedCount * 100 / maxQualified) : 0,
-                r.qualifyRate,
-                maxAttr > 0 ? Math.round(r.attributions.appflyer * 100 / maxAttr) : 0,
-                maxAttr > 0 ? Math.round(r.attributions.adjust * 100 / maxAttr) : 0,
-                maxAttr > 0 ? Math.round(r.attributions.singular * 100 / maxAttr) : 0,
-                maxAttr > 0 ? Math.round(r.attributions.tenjin * 100 / maxAttr) : 0
-              ],
-              backgroundColor: RECORDER_COLORS[i] + '20',
-              borderColor: RECORDER_COLORS[i],
-              borderWidth: 2, pointBackgroundColor: RECORDER_COLORS[i], pointRadius: 3
-            }
-          })
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'bottom', labels: { font: { size: 11, weight: '600' }, usePointStyle: true, padding: 12 } },
-            title: { display: true, text: '记录人综合能力雷达', font: { size: 14, weight: '700' }, color: '#1a1a2e', padding: { bottom: 8 } }
-          },
-          scales: { r: { min: 0, max: 100, ticks: { stepSize: 25, font: { size: 9 }, backdropColor: 'transparent' }, grid: { color: '#e5e7eb' }, pointLabels: { font: { size: 10, weight: '600' } } } }
-        }
-      }))
-    }
+    // const radarCtx = document.getElementById('radarChart')
+    // if (radarCtx && recorderSummary.value.length >= 3) {
+    //   const maxTotal = Math.max(...recorderSummary.value.map(r => r.totalCount))
+    //   const maxQualified = Math.max(...recorderSummary.value.map(r => r.qualifiedCount))
+    //   chartInstances.push(new Chart(radarCtx, {
+    //     type: 'radar',
+    //     data: {
+    //       labels: ['工作量', '合格数', '合格率', 'appflyer', 'adjust', 'singular', 'tenjin'],
+    //       datasets: recorderSummary.value.slice(0, 6).map((r, i) => {
+    //         const maxAttr = Math.max(...ATTR_OPTIONS.map(a => r.attributions[a])) || 1
+    //         return {
+    //           label: r.recorder,
+    //           data: [
+    //             maxTotal > 0 ? Math.round(r.totalCount * 100 / maxTotal) : 0,
+    //             maxQualified > 0 ? Math.round(r.qualifiedCount * 100 / maxQualified) : 0,
+    //             r.qualifyRate,
+    //             maxAttr > 0 ? Math.round(r.attributions.appflyer * 100 / maxAttr) : 0,
+    //             maxAttr > 0 ? Math.round(r.attributions.adjust * 100 / maxAttr) : 0,
+    //             maxAttr > 0 ? Math.round(r.attributions.singular * 100 / maxAttr) : 0,
+    //             maxAttr > 0 ? Math.round(r.attributions.tenjin * 100 / maxAttr) : 0
+    //           ],
+    //           backgroundColor: RECORDER_COLORS[i] + '20',
+    //           borderColor: RECORDER_COLORS[i],
+    //           borderWidth: 2, pointBackgroundColor: RECORDER_COLORS[i], pointRadius: 3
+    //         }
+    //       })
+    //     },
+    //     options: {
+    //       responsive: true, maintainAspectRatio: false,
+    //       plugins: {
+    //         legend: { position: 'bottom', labels: { font: { size: 11, weight: '600' }, usePointStyle: true, padding: 12 } },
+    //         title: { display: true, text: '记录人综合能力雷达', font: { size: 14, weight: '700' }, color: '#1a1a2e', padding: { bottom: 8 } }
+    //       },
+    //       scales: { r: { min: 0, max: 100, ticks: { stepSize: 25, font: { size: 9 }, backdropColor: 'transparent' }, grid: { color: '#e5e7eb' }, pointLabels: { font: { size: 10, weight: '600' } } } }
+    //     }
+    //   }))
+    // }
 
     recorderSummary.value.forEach((r, idx) => {
       const canvas = document.getElementById(`recorderPie_${idx}`)
@@ -1027,13 +1027,13 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div v-if="summaryData" class="charts-row">
+        <div v-if="summaryData" class="charts-row charts-row-single">
           <div class="chart-card">
             <div class="chart-canvas-wrap"><canvas id="attrPieChart"></canvas></div>
           </div>
-          <div class="chart-card">
-            <div class="chart-canvas-wrap"><canvas id="exportPieChart"></canvas></div>
-          </div>
+<!--          <div class="chart-card">-->
+<!--            <div class="chart-canvas-wrap"><canvas id="exportPieChart"></canvas></div>-->
+<!--          </div>-->
         </div>
 
         <div v-if="recorderSummary.length > 0" class="charts-row">
@@ -1045,11 +1045,11 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div v-if="recorderSummary.length >= 3" class="charts-row charts-row-single">
-          <div class="chart-card">
-            <div class="chart-canvas-wrap chart-canvas-tall"><canvas id="radarChart"></canvas></div>
-          </div>
-        </div>
+<!--        <div v-if="recorderSummary.length >= 3" class="charts-row charts-row-single">-->
+<!--          <div class="chart-card">-->
+<!--            <div class="chart-canvas-wrap chart-canvas-tall"><canvas id="radarChart"></canvas></div>-->
+<!--          </div>-->
+<!--        </div>-->
 
         <div v-if="recorderSummary.length > 0" class="recorder-pies-section">
           <div class="recorder-pies-header">
