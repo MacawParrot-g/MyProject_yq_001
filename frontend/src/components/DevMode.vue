@@ -59,6 +59,10 @@
         </div>
         <div class="side-info">
           <div class="info-card">
+            <div class="info-card-label">App ID</div>
+            <div class="info-card-value">{{ appIds }}</div>
+          </div>
+          <div class="info-card">
             <div class="info-card-label">Bundle ID</div>
             <div class="info-card-value">{{ bundleId }}</div>
           </div>
@@ -493,6 +497,7 @@ const timerCountdown = ref(0)
 const timerMsg = ref('')
 const polling = ref(false)
 const pollCount = ref(0)
+const appIds = ref('')
 let pollTimer = null
 let timerInterval = null
 let isFrozen = ref('')
@@ -615,6 +620,7 @@ async function fetchData() {
       duplicateTip.value = ''
       downloadUrl.value = json.data.downloadUrl || ''
       bundleId.value = json.data.bundleId || ''
+      appIds.value = json.data.appId || ''
       originalCurrentTargetNum.value = json.data.currentTargetNum ?? null
       isSubmit = false
       fillAttrBundleIds(bundleId.value)
@@ -685,6 +691,7 @@ function startPolling() {
         polling.value = false
         pollCount.value = 0
         downloadUrl.value = json.data.downloadUrl || ''
+        appIds.value = json.data.appId || ''
         bundleId.value = json.data.bundleId || ''
         originalCurrentTargetNum.value = json.data.currentTargetNum ?? null
         isSubmit = false
@@ -715,6 +722,7 @@ async function retestFlow() {
       showRetestModal.value = false
       downloadUrl.value = json.data.downloadUrl || ''
       bundleId.value = json.data.bundleId || ''
+      appIds.value = json.data.appId || '复测数据，暂无appid'
       fillAttrBundleIds(bundleId.value)
       try {
         const jsons = await fetchEvent(bundleId.value)
