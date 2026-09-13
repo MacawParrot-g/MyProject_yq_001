@@ -98,7 +98,15 @@ const currentUser = ref(localStorage.getItem('userName') || '')
 let exportPollTimer = null
 const unexportedTotal = ref(0)
 let unexportedTimer = null
-
+const chartFilter = ref('attrPie')
+const CHART_FILTER_OPTIONS = [
+  { value: 'attrPie', label: '整体归因占比' },
+  { value: 'recorderBar', label: '记录人合格率 vs 工作量' },
+  { value: 'stackedAttr', label: '记录人归因构成对比' },
+  { value: 'radar', label: '记录人综合能力雷达' },
+  { value: 'recorderPies', label: '各记录人归因明细' },
+  { value: 'all', label: '全部图表' }
+]
 const hasSelection = computed(() => selectedHashes.value.length > 0)
 
 const sysInfo = ref(null)
@@ -343,43 +351,43 @@ function renderCharts() {
       }))
     }
 
-    // const radarCtx = document.getElementById('radarChart')
-    // if (radarCtx && recorderSummary.value.length >= 3) {
-    //   const maxTotal = Math.max(...recorderSummary.value.map(r => r.totalCount))
-    //   const maxQualified = Math.max(...recorderSummary.value.map(r => r.qualifiedCount))
-    //   chartInstances.push(new Chart(radarCtx, {
-    //     type: 'radar',
-    //     data: {
-    //       labels: ['工作量', '合格数', '合格率', 'appflyer', 'adjust', 'singular', 'tenjin'],
-    //       datasets: recorderSummary.value.slice(0, 6).map((r, i) => {
-    //         const maxAttr = Math.max(...ATTR_OPTIONS.map(a => r.attributions[a])) || 1
-    //         return {
-    //           label: r.recorder,
-    //           data: [
-    //             maxTotal > 0 ? Math.round(r.totalCount * 100 / maxTotal) : 0,
-    //             maxQualified > 0 ? Math.round(r.qualifiedCount * 100 / maxQualified) : 0,
-    //             r.qualifyRate,
-    //             maxAttr > 0 ? Math.round(r.attributions.appflyer * 100 / maxAttr) : 0,
-    //             maxAttr > 0 ? Math.round(r.attributions.adjust * 100 / maxAttr) : 0,
-    //             maxAttr > 0 ? Math.round(r.attributions.singular * 100 / maxAttr) : 0,
-    //             maxAttr > 0 ? Math.round(r.attributions.tenjin * 100 / maxAttr) : 0
-    //           ],
-    //           backgroundColor: RECORDER_COLORS[i] + '20',
-    //           borderColor: RECORDER_COLORS[i],
-    //           borderWidth: 2, pointBackgroundColor: RECORDER_COLORS[i], pointRadius: 3
-    //         }
-    //       })
-    //     },
-    //     options: {
-    //       responsive: true, maintainAspectRatio: false,
-    //       plugins: {
-    //         legend: { position: 'bottom', labels: { font: { size: 11, weight: '600' }, usePointStyle: true, padding: 12 } },
-    //         title: { display: true, text: '记录人综合能力雷达', font: { size: 14, weight: '700' }, color: '#1a1a2e', padding: { bottom: 8 } }
-    //       },
-    //       scales: { r: { min: 0, max: 100, ticks: { stepSize: 25, font: { size: 9 }, backdropColor: 'transparent' }, grid: { color: '#e5e7eb' }, pointLabels: { font: { size: 10, weight: '600' } } } }
-    //     }
-    //   }))
-    // }
+    const radarCtx = document.getElementById('radarChart')
+    if (radarCtx && recorderSummary.value.length >= 3) {
+      const maxTotal = Math.max(...recorderSummary.value.map(r => r.totalCount))
+      const maxQualified = Math.max(...recorderSummary.value.map(r => r.qualifiedCount))
+      chartInstances.push(new Chart(radarCtx, {
+        type: 'radar',
+        data: {
+          labels: ['工作量', '合格数', '合格率', 'appflyer', 'adjust', 'singular', 'tenjin'],
+          datasets: recorderSummary.value.slice(0, 6).map((r, i) => {
+            const maxAttr = Math.max(...ATTR_OPTIONS.map(a => r.attributions[a])) || 1
+            return {
+              label: r.recorder,
+              data: [
+                maxTotal > 0 ? Math.round(r.totalCount * 100 / maxTotal) : 0,
+                maxQualified > 0 ? Math.round(r.qualifiedCount * 100 / maxQualified) : 0,
+                r.qualifyRate,
+                maxAttr > 0 ? Math.round(r.attributions.appflyer * 100 / maxAttr) : 0,
+                maxAttr > 0 ? Math.round(r.attributions.adjust * 100 / maxAttr) : 0,
+                maxAttr > 0 ? Math.round(r.attributions.singular * 100 / maxAttr) : 0,
+                maxAttr > 0 ? Math.round(r.attributions.tenjin * 100 / maxAttr) : 0
+              ],
+              backgroundColor: RECORDER_COLORS[i] + '20',
+              borderColor: RECORDER_COLORS[i],
+              borderWidth: 2, pointBackgroundColor: RECORDER_COLORS[i], pointRadius: 3
+            }
+          })
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { font: { size: 11, weight: '600' }, usePointStyle: true, padding: 12 } },
+            title: { display: true, text: '记录人综合能力雷达', font: { size: 14, weight: '700' }, color: '#1a1a2e', padding: { bottom: 8 } }
+          },
+          scales: { r: { min: 0, max: 100, ticks: { stepSize: 25, font: { size: 9 }, backdropColor: 'transparent' }, grid: { color: '#e5e7eb' }, pointLabels: { font: { size: 10, weight: '600' } } } }
+        }
+      }))
+    }
 
     recorderSummary.value.forEach((r, idx) => {
       const canvas = document.getElementById(`recorderPie_${idx}`)
@@ -894,6 +902,11 @@ watch(activeTab, async (newTab) => {
   }
 })
 
+watch(chartFilter, async () => {
+  await nextTick()
+  renderCharts()
+})
+
 onUnmounted(() => {
   stopUserPolling()
   stopExportPolling()
@@ -1079,7 +1092,16 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div v-if="summaryData" class="charts-row charts-row-single">
+        <div v-if="summaryData" class="chart-filter-bar">
+          <span class="chart-filter-icon">📊</span>
+          <label class="chart-filter-label">图表显示：</label>
+          <select v-model="chartFilter" class="chart-filter-select">
+            <option v-for="opt in CHART_FILTER_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+          </select>
+          <span class="chart-filter-hint">{{ CHART_FILTER_OPTIONS.find(o => o.value === chartFilter)?.label }}</span>
+        </div>
+
+        <div v-if="summaryData && (chartFilter === 'attrPie' || chartFilter === 'all')" class="charts-row charts-row-single">
           <div class="chart-card">
             <div class="chart-canvas-wrap"><canvas id="attrPieChart"></canvas></div>
           </div>
@@ -1088,22 +1110,30 @@ onUnmounted(() => {
 <!--          </div>-->
         </div>
 
-        <div v-if="recorderSummary.length > 0" class="charts-row">
+        <div v-if="recorderSummary.length > 0 && (chartFilter === 'recorderBar' || chartFilter === 'all')" class="charts-row">
           <div class="chart-card">
             <div class="chart-canvas-wrap"><canvas id="recorderBarChart"></canvas></div>
           </div>
+          <div class="chart-card" v-if="chartFilter === 'all'">
+            <div class="chart-canvas-wrap"><canvas id="stackedAttrChart"></canvas></div>
+          </div>
+        </div>
+
+        <div v-if="recorderSummary.length > 0 && chartFilter === 'stackedAttr'" class="charts-row charts-row-single">
           <div class="chart-card">
             <div class="chart-canvas-wrap"><canvas id="stackedAttrChart"></canvas></div>
           </div>
         </div>
 
-<!--        <div v-if="recorderSummary.length >= 3" class="charts-row charts-row-single">-->
-<!--          <div class="chart-card">-->
-<!--            <div class="chart-canvas-wrap chart-canvas-tall"><canvas id="radarChart"></canvas></div>-->
-<!--          </div>-->
-<!--        </div>-->
+        <div v-if="recorderSummary.length >= 3 && (chartFilter === 'radar' || chartFilter === 'all')" class="charts-row charts-row-single">
+          <div class="chart-card">
+            <div class="chart-canvas-wrap chart-canvas-tall"><canvas id="radarChart"></canvas></div>
+          </div>
+        </div>
 
-        <div v-if="recorderSummary.length > 0" class="recorder-pies-section">
+        <div v-if="recorderSummary.length > 0 && (chartFilter === 'recorderPies' || chartFilter === 'all')" class="recorder-pies-section">
+
+<!--        <div v-if="recorderSummary.length > 0" class="recorder-pies-section">-->
           <div class="recorder-pies-header">
             <span class="recorder-pies-title">📊 各记录人归因明细</span>
             <span class="recorder-pies-sub">共 {{ recorderSummary.length }} 位记录人</span>
@@ -1500,8 +1530,8 @@ onUnmounted(() => {
       </div>
     </div>
   </template>
-    
-    
+
+
 
     <!-- ==================== 用户管理 Tab ==================== -->
     <div v-if="activeTab === 'users'" class="admin-section">
@@ -1739,6 +1769,13 @@ onUnmounted(() => {
 .chart-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
 .chart-canvas-wrap { position: relative; height: 300px; }
 .chart-canvas-tall { height: 380px; }
+
+.chart-filter-bar { display: flex; align-items: center; gap: 10px; padding: 12px 18px; background: #f8f9fc; border: 1px solid #eaeaea; border-radius: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.chart-filter-icon { font-size: 18px; }
+.chart-filter-label { font-size: 13px; font-weight: 700; color: #555; white-space: nowrap; }
+.chart-filter-select { padding: 7px 14px; font-size: 13px; font-weight: 600; border: 2px solid #e0e0e0; border-radius: 10px; outline: none; background: #fff; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; color: #333; min-width: 180px; }
+.chart-filter-select:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.12); }
+.chart-filter-hint { font-size: 11px; color: #999; margin-left: auto; }
 
 /* ========== 记录人饼图网格 ========== */
 .recorder-pies-section { margin-bottom: 24px; }
