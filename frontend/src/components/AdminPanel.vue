@@ -1110,7 +1110,7 @@ onUnmounted(() => {
 <!--          </div>-->
         </div>
 
-        <div v-if="recorderSummary.length > 0 && (chartFilter === 'recorderBar' || chartFilter === 'all')" class="charts-row">
+        <div v-if="recorderSummary.length > 0 && (chartFilter === 'recorderBar' || chartFilter === 'all')" :class="['charts-row', { 'charts-row-single': chartFilter === 'recorderBar' }]">
           <div class="chart-card">
             <div class="chart-canvas-wrap"><canvas id="recorderBarChart"></canvas></div>
           </div>
