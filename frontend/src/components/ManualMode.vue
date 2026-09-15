@@ -124,7 +124,19 @@
         </div>
         <div class="form-group" style="flex:1">
           <label>记录日期</label>
-          <input v-model="form.record_data" />
+          <template v-if="eventResult === 'has_event' && lastReportTime">
+            <template v-if="currentUserRole === 'DEVELOPER'">
+              <div class="date-source-toggle">
+                <button type="button" class="date-source-btn" :class="{ active: dateSource === 'lastReport' }" @click="dateSource = 'lastReport'; form.record_data = lastReportTime">📡 lastReportTime</button>
+                <button type="button" class="date-source-btn" :class="{ active: dateSource === 'today' }" @click="dateSource = 'today'; form.record_data = getTodayStr()">📅 今日日期</button>
+              </div>
+              <input :value="form.record_data" disabled class="date-readonly" />
+            </template>
+            <template v-else>
+              <input :value="lastReportTime" disabled class="date-readonly" title="使用事件最后上报时间" />
+            </template>
+          </template>
+          <input v-else v-model="form.record_data" />
         </div>
       </div>
       <button class="btn-save" @click="saveToMySQL" :disabled="saving">
@@ -327,6 +339,11 @@
     min-width: auto;
   }
 }
+.date-source-toggle { display: flex; gap: 6px; margin-bottom: 6px; }
+.date-source-btn { padding: 4px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: #fff; color: #6b7280; transition: all 0.2s; }
+.date-source-btn.active { background: #667eea; color: #fff; border-color: #667eea; }
+.date-source-btn:hover:not(.active) { background: #f3f4f6; }
+.date-readonly { width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px; background: #f0fdf4; color: #166534; font-weight: 600; }
 </style>
 
 <script setup>
@@ -367,7 +384,9 @@ let timerInterval = null
 let isFrozen=ref('')
 const MAX_RETRIES = 5
 let retryCount = 0
-
+const currentUserRole = ref(localStorage.getItem('accType') || '')
+const lastReportTime = ref('')
+const dateSource = ref('lastReport')
 const form = reactive(
     {
       exception_type: '',
@@ -457,6 +476,7 @@ async function queryEvent() {
   if (!bundleId.value) return
   eventLoading.value = true; emit('error', '')
   eventResult.value = ''; newCurrentTargetNum.value = null; attributions.value = []; eventId.value = null; frozenMsg.value = ''
+  lastReportTime.value = ''
   try {
     const [eventJson, attrResults] = await Promise.all([fetchEvent(bundleId.value), fetchAllAttributions(bundleId.value)])
     if (eventJson.success && eventJson.data) {
@@ -481,6 +501,28 @@ async function queryEvent() {
       }
     }
     attributions.value = found
+    let lrt = ''
+    const appflyerResult = attrResults.find(r => r.type === 'appflyer')
+    if (appflyerResult && appflyerResult.json.success && Array.isArray(appflyerResult.json.data) && appflyerResult.json.data.length > 0) {
+      lrt = appflyerResult.json.data[appflyerResult.json.data.length - 1].lastReportTime || ''
+    }
+    if (!lrt) {
+      for (const { json } of attrResults) {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          lrt = json.data[json.data.length - 1].lastReportTime || ''
+          if (lrt) break
+        }
+      }
+    }
+    lastReportTime.value = lrt
+    if (eventResult.value === 'has_event' && lrt) {
+      if (currentUserRole.value !== 'DEVELOPER') {
+        form.record_data = lrt
+      } else {
+        if (dateSource.value === 'lastReport') form.record_data = lrt
+        else form.record_data = getTodayStr()
+      }
+    }
   } catch (e) { emit('error', '事件查询失败：' + e.message) }
   finally { eventLoading.value = false }
 }
@@ -551,6 +593,8 @@ function resetState() {
   duplicateTip.value = '';
   saveMsg.value = ''
   retryCount = 0
+  lastReportTime.value = ''
+  dateSource.value = 'lastReport'
   form.exception_type = '';
   form.remark = '';
   form.recorder = localStorage.getItem('userName') || '';
