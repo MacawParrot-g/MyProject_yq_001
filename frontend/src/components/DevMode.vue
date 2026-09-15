@@ -886,41 +886,39 @@ async function doFrozen() {
 async function saveToMySQL() {
   emit('record-saved')
   if (!form.exception_type.trim()) { emit('error', '请选择异常类型'); return }
-  saving.value = true
-  saveMsg.value = ''
-  if (newCurrentTargetNum.value === 0 || newCurrentTargetNum.value === null) {
-    attributions.value = []
+  saving.value = true; saveMsg.value = ''
+  if(newCurrentTargetNum.value===0||newCurrentTargetNum.value===null){
+    attributions.value=[]
     alert('无新增事件token，即使原本的token有归因，也不会被设置在字段内')
   }
   let finalRemark = form.remark.trim()
-  if (isFrozen.value) finalRemark += isFrozen.value
-  if (newCurrentTargetNum.value > 0 && attributions.value.length === 0) finalRemark += ',无事件归因'
+  if (isFrozen.value) {
+    finalRemark += isFrozen.value
+  }
+  if (newCurrentTargetNum.value > 0 && attributions.value.length === 0) {
+    finalRemark += ',无事件归因'
+  }
+  const finalRecordData = form.record_data.includes('T') ? form.record_data : toStorageDate(form.record_data)
   try {
     const json = await insertRecord({
       URL: downloadUrl.value,
       bundleId: bundleId.value,
-      appId: appIds.value,
       ascribe: (attributions.value || []).join(';'),
+      appId: appId.value,
       event_number: newCurrentTargetNum.value,
       exception_type: form.exception_type.trim(),
-      record_data: form.record_data,
+      record_data: finalRecordData,
       recorder: form.recorder,
       remark: finalRemark,
       isOutput: 0
     })
     if (json.success) {
       saveMsg.value = '✅ ' + (json.resultMsg || '入库成功')
-      isSubmit = true
-      await saveToHistory(finalRemark)
-      await loadHistory()
-    } else {
-      emit('error', json.resultMsg || '入库失败')
+      isSubmit=true;
     }
-  } catch (e) {
-    emit('error', '入库请求失败：' + e.message)
-  } finally {
-    saving.value = false
-  }
+    else { emit('error', json.resultMsg || '入库失败') }
+  } catch (e) { emit('error', '入库请求失败：' + e.message) }
+  finally { saving.value = false }
 }
 
 async function saveToHistory(remark) {
