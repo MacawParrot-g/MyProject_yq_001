@@ -135,8 +135,8 @@ public interface GeneranMapper extends BaseMapper<TestStatic> {
     @Select("<script>" +
             "SELECT hash, URL, bundleId, ascribe, event_number, exception_type, record_data, recorder, remark, isOutput " +
             "FROM test_static WHERE 1=1" +
-            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &gt;= STR_TO_DATE(REPLACE(#{dateFrom}, '/', '-'), '%Y-%m-%d')</if>" +
-            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &lt;= STR_TO_DATE(REPLACE(#{dateTo}, '/', '-'), '%Y-%m-%d')</if>" +
+            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(CASE WHEN INSTR(record_data, '/') > 0 THEN REPLACE(record_data, '/', '-') ELSE LEFT(record_data, 10) END, '%Y-%m-%d') &gt;= STR_TO_DATE(CASE WHEN INSTR(#{dateFrom}, '/') > 0 THEN REPLACE(#{dateFrom}, '/', '-') ELSE LEFT(#{dateFrom}, 10) END, '%Y-%m-%d')</if>" +
+            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(CASE WHEN INSTR(record_data, '/') > 0 THEN REPLACE(record_data, '/', '-') ELSE LEFT(record_data, 10) END, '%Y-%m-%d') &lt;= STR_TO_DATE(CASE WHEN INSTR(#{dateTo}, '/') > 0 THEN REPLACE(#{dateTo}, '/', '-') ELSE LEFT(#{dateTo}, 10) END, '%Y-%m-%d')</if>" +
             "<if test='bundleId != null and bundleId != \"\"'> AND bundleId = #{bundleId}</if>" +
             "<if test='keyword != null and keyword != \"\"'> AND (URL LIKE CONCAT('%', #{keyword}, '%') OR bundleId LIKE CONCAT('%', #{keyword}, '%') OR remark LIKE CONCAT('%', #{keyword}, '%'))</if>" +
             "<if test='exceptionType != null and exceptionType != \"\"'> AND exception_type = #{exceptionType}</if>" +
@@ -161,8 +161,8 @@ public interface GeneranMapper extends BaseMapper<TestStatic> {
 
     @Select("<script>" +
             "SELECT COUNT(*) FROM test_static WHERE 1=1" +
-            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &gt;= STR_TO_DATE(REPLACE(#{dateFrom}, '/', '-'), '%Y-%m-%d')</if>" +
-            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &lt;= STR_TO_DATE(REPLACE(#{dateTo}, '/', '-'), '%Y-%m-%d')</if>" +
+            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(CASE WHEN INSTR(record_data, '/') > 0 THEN REPLACE(record_data, '/', '-') ELSE LEFT(record_data, 10) END, '%Y-%m-%d') &gt;= STR_TO_DATE(CASE WHEN INSTR(#{dateFrom}, '/') > 0 THEN REPLACE(#{dateFrom}, '/', '-') ELSE LEFT(#{dateFrom}, 10) END, '%Y-%m-%d')</if>" +
+            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(CASE WHEN INSTR(record_data, '/') > 0 THEN REPLACE(record_data, '/', '-') ELSE LEFT(record_data, 10) END, '%Y-%m-%d') &lt;= STR_TO_DATE(CASE WHEN INSTR(#{dateTo}, '/') > 0 THEN REPLACE(#{dateTo}, '/', '-') ELSE LEFT(#{dateTo}, 10) END, '%Y-%m-%d')</if>" +
             "<if test='bundleId != null and bundleId != \"\"'> AND bundleId = #{bundleId}</if>" +
             "<if test='keyword != null and keyword != \"\"'> AND (URL LIKE CONCAT('%', #{keyword}, '%') OR bundleId LIKE CONCAT('%', #{keyword}, '%') OR remark LIKE CONCAT('%', #{keyword}, '%'))</if>" +
             "<if test='exceptionType != null and exceptionType != \"\"'> AND exception_type = #{exceptionType}</if>" +
@@ -202,8 +202,8 @@ public interface GeneranMapper extends BaseMapper<TestStatic> {
     @Select("<script>" +
             "SELECT COUNT(*) FROM test_static WHERE 1=1" +
             " AND ascribe IS NOT NULL AND ascribe != ''" +
-            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &gt;= STR_TO_DATE(REPLACE(#{dateFrom}, '/', '-'), '%Y-%m-%d')</if>" +
-            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &lt;= STR_TO_DATE(REPLACE(#{dateTo}, '/', '-'), '%Y-%m-%d')</if>" +
+            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(CASE WHEN INSTR(record_data, '/') > 0 THEN REPLACE(record_data, '/', '-') ELSE LEFT(record_data, 10) END, '%Y-%m-%d') &gt;= STR_TO_DATE(CASE WHEN INSTR(#{dateFrom}, '/') > 0 THEN REPLACE(#{dateFrom}, '/', '-') ELSE LEFT(#{dateFrom}, 10) END, '%Y-%m-%d')</if>" +
+            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(CASE WHEN INSTR(record_data, '/') > 0 THEN REPLACE(record_data, '/', '-') ELSE LEFT(record_data, 10) END, '%Y-%m-%d') &lt;= STR_TO_DATE(CASE WHEN INSTR(#{dateTo}, '/') > 0 THEN REPLACE(#{dateTo}, '/', '-') ELSE LEFT(#{dateTo}, 10) END, '%Y-%m-%d')</if>" +
             "<if test='bundleId != null and bundleId != \"\"'> AND bundleId = #{bundleId}</if>" +
             "<if test='keyword != null and keyword != \"\"'> AND (URL LIKE CONCAT('%', #{keyword}, '%') OR bundleId LIKE CONCAT('%', #{keyword}, '%') OR remark LIKE CONCAT('%', #{keyword}, '%'))</if>" +
             "<if test='exceptionType != null and exceptionType != \"\"'> AND exception_type = #{exceptionType}</if>" +
@@ -226,8 +226,8 @@ public interface GeneranMapper extends BaseMapper<TestStatic> {
             "SELECT COUNT(*) FROM test_static WHERE 1=1" +
             " AND ascribe IS NOT NULL AND ascribe != ''" +
             " AND ascribe LIKE CONCAT('%', #{attrType}, '%')" +
-            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &gt;= STR_TO_DATE(REPLACE(#{dateFrom}, '/', '-'), '%Y-%m-%d')</if>" +
-            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &lt;= STR_TO_DATE(REPLACE(#{dateTo}, '/', '-'), '%Y-%m-%d')</if>" +
+            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(CASE WHEN INSTR(record_data, '/') > 0 THEN REPLACE(record_data, '/', '-') ELSE LEFT(record_data, 10) END, '%Y-%m-%d') &gt;= STR_TO_DATE(CASE WHEN INSTR(#{dateFrom}, '/') > 0 THEN REPLACE(#{dateFrom}, '/', '-') ELSE LEFT(#{dateFrom}, 10) END, '%Y-%m-%d')</if>" +
+            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(CASE WHEN INSTR(record_data, '/') > 0 THEN REPLACE(record_data, '/', '-') ELSE LEFT(record_data, 10) END, '%Y-%m-%d') &lt;= STR_TO_DATE(CASE WHEN INSTR(#{dateTo}, '/') > 0 THEN REPLACE(#{dateTo}, '/', '-') ELSE LEFT(#{dateTo}, 10) END, '%Y-%m-%d')</if>" +
             "<if test='bundleId != null and bundleId != \"\"'> AND bundleId = #{bundleId}</if>" +
             "<if test='keyword != null and keyword != \"\"'> AND (URL LIKE CONCAT('%', #{keyword}, '%') OR bundleId LIKE CONCAT('%', #{keyword}, '%') OR remark LIKE CONCAT('%', #{keyword}, '%'))</if>" +
             "<if test='exceptionType != null and exceptionType != \"\"'> AND exception_type = #{exceptionType}</if>" +
@@ -252,8 +252,8 @@ public interface GeneranMapper extends BaseMapper<TestStatic> {
 
     @Select("<script>" +
             "SELECT recorder, ascribe FROM test_static WHERE recorder IS NOT NULL AND recorder != ''" +
-            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &gt;= STR_TO_DATE(REPLACE(#{dateFrom}, '/', '-'), '%Y-%m-%d')</if>" +
-            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &lt;= STR_TO_DATE(REPLACE(#{dateTo}, '/', '-'), '%Y-%m-%d')</if>" +
+            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(CASE WHEN INSTR(record_data, '/') > 0 THEN REPLACE(record_data, '/', '-') ELSE LEFT(record_data, 10) END, '%Y-%m-%d') &gt;= STR_TO_DATE(CASE WHEN INSTR(#{dateFrom}, '/') > 0 THEN REPLACE(#{dateFrom}, '/', '-') ELSE LEFT(#{dateFrom}, 10) END, '%Y-%m-%d')</if>" +
+            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(CASE WHEN INSTR(record_data, '/') > 0 THEN REPLACE(record_data, '/', '-') ELSE LEFT(record_data, 10) END, '%Y-%m-%d') &lt;= STR_TO_DATE(CASE WHEN INSTR(#{dateTo}, '/') > 0 THEN REPLACE(#{dateTo}, '/', '-') ELSE LEFT(#{dateTo}, 10) END, '%Y-%m-%d')</if>" +
             "<if test='bundleId != null and bundleId != \"\"'> AND bundleId = #{bundleId}</if>" +
             "<if test='keyword != null and keyword != \"\"'> AND (URL LIKE CONCAT('%', #{keyword}, '%') OR bundleId LIKE CONCAT('%', #{keyword}, '%') OR remark LIKE CONCAT('%', #{keyword}, '%'))</if>" +
             "<if test='exceptionType != null and exceptionType != \"\"'> AND exception_type = #{exceptionType}</if>" +
@@ -273,40 +273,6 @@ public interface GeneranMapper extends BaseMapper<TestStatic> {
                                                   @Param("isOutput") Integer isOutput);
 
 
-//    @Select("<script>" +
-//            "SELECT COUNT(*) FROM test_static WHERE 1=1" +
-//            "<if test='ascribe != null and ascribe != \"\"'> AND ascribe = #{ascribe}</if>" +
-//            "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
-//            "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
-//            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &gt;= STR_TO_DATE(REPLACE(#{dateFrom}, '/', '-'), '%Y-%m-%d')</if>" +
-//            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &lt;= STR_TO_DATE(REPLACE(#{dateTo}, '/', '-'), '%Y-%m-%d')</if>" +
-//            "</script>")
-//    long countByCondition(@Param("ascribe") String ascribe,
-//                          @Param("frozenOnly") boolean frozenOnly,
-//                          @Param("recorder") String recorder,
-//                          @Param("dateFrom") String dateFrom,
-//                          @Param("dateTo") String dateTo);
-
-//    @Select("<script>" +
-//            "SELECT hash, URL, bundleId, ascribe, event_number, exception_type, record_data, recorder, remark, isOutput " +
-//            "FROM test_static WHERE 1=1" +
-//            "<if test='ascribe != null and ascribe != \"\"'> AND ascribe = #{ascribe}</if>" +
-//            "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
-//            "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
-//            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &gt;= STR_TO_DATE(REPLACE(#{dateFrom}, '/', '-'), '%Y-%m-%d')</if>" +
-//            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &lt;= STR_TO_DATE(REPLACE(#{dateTo}, '/', '-'), '%Y-%m-%d')</if>" +
-//            " ORDER BY record_data DESC, URL" +
-//            " LIMIT #{size} OFFSET #{offset}" +
-//            "</script>")
-//    List<TestStatic> selectByConditionPaged(@Param("ascribe") String ascribe,
-//                                            @Param("frozenOnly") boolean frozenOnly,
-//                                            @Param("recorder") String recorder,
-//                                            @Param("dateFrom") String dateFrom,
-//                                            @Param("dateTo") String dateTo,
-//                                            @Param("size") int size,
-//                                            @Param("offset") int offset);
-
-
 
     @Insert("<script>" +
             "INSERT INTO test_static (hash, URL, bundleId, ascribe, event_number, exception_type, record_data, recorder, remark, isOutput) VALUES " +
@@ -315,35 +281,7 @@ public interface GeneranMapper extends BaseMapper<TestStatic> {
             "</foreach>" +
             "</script>")
     int batchInsertRecords(@Param("records") List<TestStatic> records);
-
-//    @Select("<script>" +
-//            "SELECT hash, URL, bundleId, ascribe, event_number, exception_type, record_data, recorder, remark, isOutput " +
-//            "FROM test_static WHERE 1=1" +
-//            "<if test='ascribe != null and ascribe != \"\"'> AND ascribe LIKE CONCAT('%', #{ascribe}, '%')</if>" +
-//            "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
-//            "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
-//            "<if test='recordData != null and recordData != \"\"'> AND record_data = #{recordData}</if>" +
-//            " ORDER BY URL" +
-//            " LIMIT #{size} OFFSET #{offset}" +
-//            "</script>")
-//    List<TestStatic> selectByConditionPaged(@Param("ascribe") String ascribe,
-//                                            @Param("frozenOnly") boolean frozenOnly,
-//                                            @Param("recorder") String recorder,
-//                                            @Param("recordData") String recordData,
-//                                            @Param("size") int size,
-//                                            @Param("offset") int offset);
-
-//    @Select("<script>" +
-//            "SELECT COUNT(*) FROM test_static WHERE 1=1" +
-//            "<if test='ascribe != null and ascribe != \"\"'> AND ascribe LIKE CONCAT('%', #{ascribe}, '%')</if>" +
-//            "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
-//            "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
-//            "<if test='recordData != null and recordData != \"\"'> AND record_data = #{recordData}</if>" +
-//            "</script>")
-//    long countByCondition(@Param("ascribe") String ascribe,
-//                          @Param("frozenOnly") boolean frozenOnly,
-//                          @Param("recorder") String recorder,
-//                          @Param("recordData") String recordData);
+    
 
     @Select("SELECT * FROM test_static WHERE isOutput = 0 AND recorder = #{recorder} AND record_data = #{recordData}")
     List<TestStatic> selectUnexportedByDateAndRecorder(@Param("recorder") String recorder, @Param("recordData") String recordData);
@@ -407,8 +345,8 @@ public interface GeneranMapper extends BaseMapper<TestStatic> {
             "<if test='ascribe != null and ascribe != \"\"'> AND ascribe = #{ascribe}</if>" +
             "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
             "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
-            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &gt;= STR_TO_DATE(REPLACE(#{dateFrom}, '/', '-'), '%Y-%m-%d')</if>" +
-            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &lt;= STR_TO_DATE(REPLACE(#{dateTo}, '/', '-'), '%Y-%m-%d')</if>" +
+            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(CASE WHEN INSTR(record_data, '/') > 0 THEN REPLACE(record_data, '/', '-') ELSE LEFT(record_data, 10) END, '%Y-%m-%d') &gt;= STR_TO_DATE(CASE WHEN INSTR(#{dateFrom}, '/') > 0 THEN REPLACE(#{dateFrom}, '/', '-') ELSE LEFT(#{dateFrom}, 10) END, '%Y-%m-%d')</if>" +
+            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(CASE WHEN INSTR(record_data, '/') > 0 THEN REPLACE(record_data, '/', '-') ELSE LEFT(record_data, 10) END, '%Y-%m-%d') &lt;= STR_TO_DATE(CASE WHEN INSTR(#{dateTo}, '/') > 0 THEN REPLACE(#{dateTo}, '/', '-') ELSE LEFT(#{dateTo}, 10) END, '%Y-%m-%d')</if>" +
             "</script>")
     long countByConditionWithDate(@Param("ascribe") String ascribe,
                                   @Param("frozenOnly") boolean frozenOnly,
@@ -422,8 +360,8 @@ public interface GeneranMapper extends BaseMapper<TestStatic> {
             "<if test='ascribe != null and ascribe != \"\"'> AND ascribe = #{ascribe}</if>" +
             "<if test='frozenOnly'> AND remark LIKE '%已冻结%'</if>" +
             "<if test='recorder != null and recorder != \"\"'> AND recorder LIKE CONCAT('%', #{recorder}, '%')</if>" +
-            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &gt;= STR_TO_DATE(REPLACE(#{dateFrom}, '/', '-'), '%Y-%m-%d')</if>" +
-            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(REPLACE(record_data, '/', '-'), '%Y-%m-%d') &lt;= STR_TO_DATE(REPLACE(#{dateTo}, '/', '-'), '%Y-%m-%d')</if>" +
+            "<if test='dateFrom != null and dateFrom != \"\"'> AND STR_TO_DATE(CASE WHEN INSTR(record_data, '/') > 0 THEN REPLACE(record_data, '/', '-') ELSE LEFT(record_data, 10) END, '%Y-%m-%d') &gt;= STR_TO_DATE(CASE WHEN INSTR(#{dateFrom}, '/') > 0 THEN REPLACE(#{dateFrom}, '/', '-') ELSE LEFT(#{dateFrom}, 10) END, '%Y-%m-%d')</if>" +
+            "<if test='dateTo != null and dateTo != \"\"'> AND STR_TO_DATE(CASE WHEN INSTR(record_data, '/') > 0 THEN REPLACE(record_data, '/', '-') ELSE LEFT(record_data, 10) END, '%Y-%m-%d') &lt;= STR_TO_DATE(CASE WHEN INSTR(#{dateTo}, '/') > 0 THEN REPLACE(#{dateTo}, '/', '-') ELSE LEFT(#{dateTo}, 10) END, '%Y-%m-%d')</if>" +
             " ORDER BY record_data DESC, URL" +
             " LIMIT #{size} OFFSET #{offset}" +
             "</script>")
