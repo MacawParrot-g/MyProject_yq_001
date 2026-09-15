@@ -153,6 +153,8 @@ const componentMap = computed(() => {
   if (accType.value === 'DEVELOPER') {
     map.develop = DevMode
     map.mon = MonitorPanel
+  }
+  if (accType.value === 'USER' || accType.value === 'ADMIN' || accType.value === 'DEVELOPER') {
     map.grade = GradeManage
   }
   if (accType.value === 'USER') {
@@ -182,7 +184,7 @@ const tabs = [
 const filteredTabs = computed(() => {
   let result = [...tabs]
   if (accType.value !== 'DEVELOPER') {
-    result = result.filter(t => t.key !== 'develop' && t.key !== 'mon' && t.key !== 'grade')
+    result = result.filter(t => t.key !== 'develop' && t.key !== 'mon')
   }
   if (accType.value === 'USER') {
     result = result.filter(t => t.key !== 'audit' && t.key !== 'task' && t.key !== 'notify')
@@ -226,10 +228,6 @@ watch(sidebarCollapsed, (newVal) => {
     fetchTodayCount()
   }
 })
-
-// onUnmounted(() => {
-//   if (todayCountTimer) clearInterval(todayCountTimer)
-// })
 
 async function doLogin() {
   if (!loginUid.value.trim() || !loginPwd.value.trim()) return
