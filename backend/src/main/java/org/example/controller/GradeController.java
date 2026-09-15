@@ -49,7 +49,6 @@ public class GradeController {
     @PostMapping("/manage/search")
     @LogExecutionTime("评级管理-搜索")
     public Result search(HttpServletRequest request, @RequestBody Map<String, Object> body) {
-        if (!isDeveloper(request)) return Result.fail("仅开发者可访问评级管理");
         String bundleId = (String) body.get("bundleId");
         String grade = (String) body.get("grade");
         String recorder = (String) body.get("recorder");
@@ -62,23 +61,21 @@ public class GradeController {
     @DeleteMapping("/manage/delete")
     @LogExecutionTime("评级管理-删除")
     public Result delete(HttpServletRequest request, @RequestParam String bundleId) {
-        if (!isDeveloper(request)) return Result.fail("仅开发者可访问评级管理");
         return gradeService.deleteGrade(bundleId);
     }
 
     @PutMapping("/manage/update")
     @LogExecutionTime("评级管理-更新")
     public Result update(HttpServletRequest request, @RequestBody Map<String, String> body) {
-        if (!isDeveloper(request)) return Result.fail("仅开发者可访问评级管理");
         String bundleId = body.get("bundleId");
         String grade = body.get("grade");
         String remark = body.get("remark");
         return gradeService.updateGrade(bundleId, grade, remark);
     }
 
-    private boolean isDeveloper(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("type") == null) return false;
-        return "DEVELOPER".equals(session.getAttribute("type"));
-    }
+//    private boolean isDeveloper(HttpServletRequest request) {
+//        HttpSession session = request.getSession(false);
+//        if (session == null || session.getAttribute("type") == null) return false;
+//        return "DEVELOPER".equals(session.getAttribute("type"));
+//    }
 }
