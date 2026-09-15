@@ -157,7 +157,7 @@
         <label>异常类型</label>
         <select v-model="form.exception_type">
           <option value="" disabled>请选择异常类型</option>
-          <option v-for="opt in exceptionOptions" :key="opt" :value="opt">{{ opt }}</option>
+          <option v-for="opt in exceptionOptions" :key="opt" :value="opt" :disabled="opt === '正常' && eventResult === 'no_event'">{{ opt }}</option>
         </select>
       </div>
       <div class="form-group">
@@ -608,8 +608,13 @@ import {
 } from '../api/index.js'
 
 const emit = defineEmits(['error'])
+
 const exceptionOptions = ['正常','iOS16闪退','iOS13/14/16均闪退','需要iOS18以上','地区不支持','硬件版本过低','超过10分钟0上报','越狱检测','其他','验证已解决','测试']
+
+
 const template=['需要iOS17以上','需要登陆后使用，无法注册','卡死在加载页进不去','非英语汉语软件，看不懂','网络检测，无法进入','需要订阅后使用','禁止入库']
+
+
 const downloadUrl = ref('')
 const bundleId = ref('')
 const originalCurrentTargetNum = ref(null)
@@ -866,10 +871,12 @@ async function queryEvent() {
           newCurrentTargetNum.value = newCurrent
         } else {
           eventResult.value = 'no_event'
+          if (form.exception_type === '正常') form.exception_type = ''
         }
       } else {
         newCurrentTargetNum.value = newCurrent
         eventResult.value = newCurrent != null && newCurrent > 0 ? 'has_event' : 'no_event'
+        if (eventResult.value === 'no_event' && form.exception_type === '正常') form.exception_type = ''
       }
     } else {
       emit('error', '事件接口返回异常：' + (eventJson.resultMsg || '未知错误'))
