@@ -176,7 +176,19 @@
         </div>
         <div class="form-group" style="flex:1">
           <label>记录日期</label>
-          <input type="date" v-model="form.record_data" />
+          <template v-if="eventResult === 'has_event' && lastReportTime">
+            <template v-if="currentUserRole === 'DEVELOPER'">
+              <div class="date-source-toggle">
+                <button type="button" class="date-source-btn" :class="{ active: dateSource === 'lastReport' }" @click="dateSource = 'lastReport'; form.record_data = lastReportTime">📡 lastReportTime</button>
+                <button type="button" class="date-source-btn" :class="{ active: dateSource === 'today' }" @click="dateSource = 'today'; form.record_data = getTodayStr()">📅 今日日期</button>
+              </div>
+              <input :value="form.record_data" disabled class="date-readonly" />
+            </template>
+            <template v-else>
+              <input :value="lastReportTime" disabled class="date-readonly" title="使用事件最后上报时间" />
+            </template>
+          </template>
+          <input v-else type="date" v-model="form.record_data" />
         </div>
       </div>
       <div class="form-btn-row">
@@ -588,6 +600,11 @@
 .grade-detail-footer .btn-cancel:hover { background: rgba(255,255,255,0.9); }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }}
+.date-source-toggle { display: flex; gap: 6px; margin-bottom: 6px; }
+.date-source-btn { padding: 4px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: #fff; color: #6b7280; transition: all 0.2s; }
+.date-source-btn.active { background: #667eea; color: #fff; border-color: #667eea; }
+.date-source-btn:hover:not(.active) { background: #f3f4f6; }
+.date-readonly { width: 100%; box-sizing: border-box; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 13px; background: #f0fdf4; color: #166534; font-weight: 600; }
 </style>
 <script setup>import { ref, reactive, onMounted, watch, nextTick, onUnmounted } from 'vue'
 import QRCode from 'qrcode'
@@ -614,6 +631,10 @@ const exceptionOptions = ['正常','iOS16闪退','iOS13/14/16均闪退','需要i
 
 const template=['需要iOS17以上','需要登陆后使用，无法注册','卡死在加载页进不去','非英语汉语软件，看不懂','网络检测，无法进入','需要订阅后使用','禁止入库']
 
+const currentUserRole = ref(localStorage.getItem('accType') || '')
+const lastReportTime = ref('')
+const dateSource = ref('lastReport')
+let exportPollTimer = null
 
 const downloadUrl = ref('')
 const bundleId = ref('')
@@ -857,6 +878,7 @@ async function queryEvent() {
   eventLoading.value = true
   emit('error', '')
   eventResult.value = ''; newCurrentTargetNum.value = null; attributions.value = []; eventId.value = null; frozenMsg.value = ''
+  lastReportTime.value = ''
   try {
     const [eventJson, attrResults] = await Promise.all([
       fetchEvent(bundleId.value),
@@ -871,12 +893,10 @@ async function queryEvent() {
           newCurrentTargetNum.value = newCurrent
         } else {
           eventResult.value = 'no_event'
-          if (form.exception_type === '正常') form.exception_type = ''
         }
       } else {
         newCurrentTargetNum.value = newCurrent
         eventResult.value = newCurrent != null && newCurrent > 0 ? 'has_event' : 'no_event'
-        if (eventResult.value === 'no_event' && form.exception_type === '正常') form.exception_type = ''
       }
     } else {
       emit('error', '事件接口返回异常：' + (eventJson.resultMsg || '未知错误'))
@@ -892,6 +912,28 @@ async function queryEvent() {
       }
     }
     attributions.value = found
+    let lrt = ''
+    const appflyerResult = attrResults.find(r => r.type === 'appflyer')
+    if (appflyerResult && appflyerResult.json.success && Array.isArray(appflyerResult.json.data) && appflyerResult.json.data.length > 0) {
+      lrt = appflyerResult.json.data[appflyerResult.json.data.length - 1].lastReportTime || ''
+    }
+    if (!lrt) {
+      for (const { json } of attrResults) {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          lrt = json.data[json.data.length - 1].lastReportTime || ''
+          if (lrt) break
+        }
+      }
+    }
+    lastReportTime.value = lrt
+    if (eventResult.value === 'has_event' && lrt) {
+      if (currentUserRole.value !== 'DEVELOPER') {
+        form.record_data = lrt
+      } else {
+        if (dateSource.value === 'lastReport') form.record_data = lrt
+        else form.record_data = getTodayStr()
+      }
+    }
   } catch (e) {
     emit('error', '事件查询失败：' + e.message)
   } finally {
@@ -910,9 +952,12 @@ function resetState() {
   frozenMsg.value = '';
   duplicateTip.value = '';
   saveMsg.value = ''
+  lastReportTime.value = ''
+  dateSource.value = 'lastReport'
   form.exception_type = '';
   form.remark = '';
   form.recorder = localStorage.getItem('userName') || '';
+  form.record_data = getTodayStr()
   //form.record_data = getTodayStr()
   isFrozen.value=''
   gradeData.value = null
