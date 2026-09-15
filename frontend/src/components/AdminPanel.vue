@@ -130,7 +130,7 @@ const reportDate = ref('')
 const reportLoading = ref(false)
 const reportData = ref(null)
 
-
+const currentUserRole = ref(localStorage.getItem('accType') || '')
 
 const viewTypeLabel = {
   ALL: '全部数据', APPFLYER: 'appflyer', ADJUST: 'adjust',
@@ -1323,7 +1323,7 @@ onUnmounted(() => {
           </label>
         </div>
 
-        <div class="import-section">
+        <div class="import-section" v-if="currentUserRole === 'DEVELOPER'">
           <div class="import-toggle" @click="importExpanded = !importExpanded">
             <span class="import-toggle-icon">{{ importExpanded ? '▼' : '▶' }}</span>
             <span class="import-toggle-icon-emoji">📥</span>
