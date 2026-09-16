@@ -2,7 +2,7 @@ spring:
   rabbitmq:
     host: rabbitmq
     port: 5672
-    username: ${RABBITMQ_DEFAULT_USER:tds_admin}
+    username: ${RABBITMQ_USER}
     password: ${RABBITMQ_DEFAULT_PASS}
     virtual-host: /
     connection-timeout: 3000ms
