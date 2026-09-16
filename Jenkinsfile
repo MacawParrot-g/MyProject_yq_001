@@ -99,7 +99,7 @@ pipeline {
                  echo '>>> 启动/重建所有服务...'
                 dir("${DEPLOY_DIR}") {
                     sh """
-                        rm -rf cicd-data/nginx-logs/*
+                        rm -rf persistent-data/nginx-logs/*
                         
                         # 【终极杀招】在启动前，强制停止并删除旧的后端容器！
                         # 不管它是什么状态，直接物理消灭，绝不留情！
