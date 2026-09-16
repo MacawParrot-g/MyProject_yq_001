@@ -14,7 +14,7 @@ services:
     ports:
       - "13306:3305"    # 宿主机 13306 → 容器内 3305（非默认端口）
     volumes:
-      - ./cicd-data/mysql:/var/lib/mysql
+      - ./persistent-data/mysql:/var/lib/mysql
       - ./mysql/initsql:/docker-entrypoint-initdb.d
       - ./mysql/conf/my.cnf:/etc/mysql/conf.d/my.cnf
     networks:
@@ -33,7 +33,7 @@ services:
     ports:
       - "16379:6380"    # 宿主机 16380 → 容器内 6380（非默认端口）
     volumes:
-      - ./cicd-data/redis:/data
+      - ./persistent-data/redis:/data
     networks:
       - cicd-network
     healthcheck:
@@ -51,7 +51,7 @@ services:
       RABBITMQ_DEFAULT_PASS: 91781369
       RABBITMQ_DEFAULT_VHOST: /
     volumes:
-      - ./cicd-data/rabbitmq:/var/lib/rabbitmq
+      - ./persistent-data/rabbitmq:/var/lib/rabbitmq
     networks:
       - cicd-network
     healthcheck:
@@ -71,7 +71,7 @@ services:
     container_name: cicd-backend
     restart: always
     volumes:
-      - ./cicd-data/export:/data/export
+      - ./persistent-data/export:/data/export
     environment:
       SPRING_PROFILES_ACTIVE: prod
       # MySQL：容器内仍用 3305，通过服务名 'mysql' 访问
@@ -104,7 +104,7 @@ services:
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
       - ./nginx/html:/usr/share/nginx/html
-      - ./cicd-data/nginx-logs:/var/log/nginx
+      - ./persistent-data/nginx-logs:/var/log/nginx
     depends_on:
       - backend
     networks:
