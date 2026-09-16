@@ -7,7 +7,7 @@ pipeline {
         JAR_NAME = 'Automatic_test_script-1.0-SNAPSHOT.jar'
         
         // === 部署配置 ===
-        DEPLOY_DIR = '/opt/cicd-sandbox'
+        DEPLOY_DIR = '/opt/traffic-data-system-YQ5287476'
         COMPOSE_FILE = 'docker-compose.cicd.yml'
     }
 
@@ -19,9 +19,9 @@ pipeline {
     stages {
                         stage('1. 拉取代码') {
             steps {
-                echo '>>> 【终极清洗】强制清理 Jenkins 工作区的所有改动...'
+                echo '>>> 强制清理 Jenkins 工作区的所有改动...'
                 
-                // 1. 强制删除所有未被 Git 追踪的文件和目录（包括你之前手动在宿主机看到的旧文件）
+                // 1. 强制删除所有未被 Git 追踪的文件和目录
                 sh 'git clean -fdx'
                 
                 // 2. 强制重置所有已被 Git 追踪的文件到上一次提交的状态，放弃所有本地修改
@@ -31,7 +31,7 @@ pipeline {
                 // 3. 再次执行拉取，此时工作区是绝对干净的，Git 会被迫更新到最新版本
                 checkout scm
                 
-                echo '>>> 【铁证如山】打印当前拉取的代码版本，请你亲自核对！'
+                echo '>>> 打印当前拉取的代码版本！'
                 // 4. 打印最新一次提交的哈希值和日志，这是验证拉取是否成功的铁证
                 sh '''
                     echo "=== 最新提交信息 ==="
@@ -49,14 +49,14 @@ pipeline {
                     echo '>>> 开始构建后端...'
                     sh 'mvn clean package -DskipTests -U'
 
-                    echo '>>> 【关键验证】检查 JAR 包是否真的生成成功了！'
+                    echo '>>> 检查 JAR 包是否真的生成成功了！'
                     // 如果 JAR 包不存在，这里会直接报错并终止流水线，不再往下走！
                     sh "ls -lh target/${JAR_NAME}"
 
-                    echo '>>> 【物理超度】强制删除旧镜像...'
+                    echo '>>> 强制删除旧镜像...'
                     sh "docker rmi -f ${BACKEND_IMAGE} || true"
 
-                    echo '>>> 【原生构建】强制从头构建...'
+                    echo '>>> 强制从头构建...'
                     sh "docker build --no-cache --pull -t ${BACKEND_IMAGE} ."
                 }
             }
@@ -66,7 +66,7 @@ pipeline {
         stage('3. 前端构建 (Vite)') {
             steps {
                 dir('frontend') {
-                    echo '>>> 【强制清理】删除旧的前端构建产物，防止文件堆积...'
+                    echo '>>> 删除旧的前端构建产物，防止文件堆积...'
                     sh 'rm -rf ../nginx/html/dist/*'
                     
                     echo '>>> 开始安装前端依赖并构建...'
@@ -79,7 +79,7 @@ pipeline {
             }
         }
 
-                stage('4. 本地部署 (沙箱环境)') {
+                stage('4. 部署 ') {
             steps {
                 echo '>>> 准备部署目录...'
                 sh """
@@ -116,11 +116,10 @@ pipeline {
                 sh """
                     sleep 3
                     
-                    # 【终极杀招】直接在宿主机上物理删除旧的前端文件！
-                    # 因为挂载是双向同步的，删了宿主机的，容器里也就没了！
+                    # 在宿主机上物理删除旧的前端文件
                     rm -rf ${DEPLOY_DIR}/nginx/html/dist/*
                     
-                    # 然后再把最新的前端文件复制进去
+                    # 把最新的前端文件复制进去
                     docker cp nginx/html/dist/. cicd-nginx:/usr/share/nginx/html/dist/
                     
                     docker cp nginx/conf.d/. cicd-nginx:/etc/nginx/conf.d/
@@ -128,7 +127,7 @@ pipeline {
                     docker exec cicd-nginx nginx -s reload
                 """
                 
-                echo '✅ 前后端部署完成！'
+                echo '前后端部署完成！'
             }
         }
     }
@@ -141,10 +140,10 @@ pipeline {
             cleanWs()
         }
         failure {
-            echo '❌ 流水线执行失败，请检查上方日志！'
+            echo '流水线执行失败，请检查上方日志！'
         }
         success {
-            echo '✅ 部署成功！前端已更新，后端已重建。'
+            echo '部署成功！前端已更新，后端已重建。'
         }
     }
 }
