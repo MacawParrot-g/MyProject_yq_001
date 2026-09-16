@@ -188,10 +188,10 @@ const tabs = [
 const filteredTabs = computed(() => {
   let result = [...tabs]
   if (accType.value !== 'DEVELOPER') {
-    result = result.filter(t => t.key !== 'develop' && t.key !== 'mon')
+    result = result.filter(t => t.key !== 'develop' && t.key !== 'mon' && t.key !== 'mq')
   }
   if (accType.value === 'USER') {
-    result = result.filter(t => t.key !== 'audit' && t.key !== 'task' && t.key !== 'notify' && t.key !== 'mq')
+    result = result.filter(t => t.key !== 'audit' && t.key !== 'task' && t.key !== 'notify')
   }
   if (accType.value === 'ADMIN' || accType.value === 'DEVELOPER') {
     result = result.map(t => {
