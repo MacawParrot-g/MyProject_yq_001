@@ -83,7 +83,7 @@ pipeline {
             steps {
                 echo '>>> 准备部署目录...'
                 sh """
-                    mkdir -p ${DEPLOY_DIR}/cicd-data/{mysql,redis,rabbitmq,export,nginx-logs}
+                    mkdir -p ${DEPLOY_DIR}/persistent-data/{mysql,redis,rabbitmq,export,nginx-logs}
                     mkdir -p ${DEPLOY_DIR}/mysql/initsql
                     
                     # 只复制配置文件
@@ -103,8 +103,8 @@ pipeline {
                         
                         # 【终极杀招】在启动前，强制停止并删除旧的后端容器！
                         # 不管它是什么状态，直接物理消灭，绝不留情！
-                        docker stop cicd-backend || true
-                        docker rm cicd-backend || true
+                        docker stop tds-backend || true
+                        docker rm tds-backend || true
                         
                         # 此时本地只有最新构建的 myapp-backend:latest
                         # 启动容器，Docker 将被迫使用最新的镜像！
@@ -120,11 +120,11 @@ pipeline {
                     rm -rf ${DEPLOY_DIR}/nginx/html/dist/*
                     
                     # 把最新的前端文件复制进去
-                    docker cp nginx/html/dist/. cicd-nginx:/usr/share/nginx/html/dist/
+                    docker cp nginx/html/dist/. tds-nginx:/usr/share/nginx/html/dist/
                     
-                    docker cp nginx/conf.d/. cicd-nginx:/etc/nginx/conf.d/
-                    docker exec cicd-nginx chown -R 101:101 /usr/share/nginx/html
-                    docker exec cicd-nginx nginx -s reload
+                    docker cp nginx/conf.d/. trs-nginx:/etc/nginx/conf.d/
+                    docker exec tds-nginx chown -R 101:101 /usr/share/nginx/html
+                    docker exec tds-nginx nginx -s reload
                 """
                 
                 echo '前后端部署完成！'
