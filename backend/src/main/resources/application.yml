@@ -2,8 +2,8 @@ spring:
   rabbitmq:
     host: rabbitmq
     port: 5672
-    username: admin
-    password: 91781369
+    username: ${RABBITMQ_USER:tds_admin} 
+    password: ${RABBITMQ_PASSWORD}     
     virtual-host: /
     connection-timeout: 3000ms
     publisher-confirm-type: correlated
@@ -27,8 +27,8 @@ spring:
       timeout: 3000ms
   datasource:
     url: jdbc:mysql://mysql:3305/test_data?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&autoReconnect=true&failOverReadOnly=false
-    username: remote_user
-    password: 12345678
+    username: ${MYSQL_USER:remote_user}
+    password: ${MYSQL_PASSWORD}  
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
