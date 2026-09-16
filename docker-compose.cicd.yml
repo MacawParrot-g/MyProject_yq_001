@@ -3,13 +3,13 @@ version: '3.8'
 services:
   mysql:
     image: mysql:8.0
-    container_name: cicd-mysql
+    container_name: tds-mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: 12345678
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: test_data
-      MYSQL_USER: remote_user
-      MYSQL_PASSWORD: 12345678
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       TZ: Asia/Shanghai
     ports:
       - "13306:3305"    # 宿主机 13306 → 容器内 3305（非默认端口）
@@ -27,7 +27,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: cicd-redis
+    container_name: tds-redis
     restart: always
     command: redis-server --appendonly yes --port 6380
     ports:
@@ -44,11 +44,11 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: cicd-rabbitmq
+    container_name: tds-rabbitmq
     restart: always
     environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: 91781369
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
       RABBITMQ_DEFAULT_VHOST: /
     volumes:
       - ./persistent-data/rabbitmq:/var/lib/rabbitmq
@@ -68,7 +68,7 @@ services:
 #    build:
 #      context: ./backend
 #      dockerfile: Dockerfile
-    container_name: cicd-backend
+    container_name: tds-backend
     restart: always
     volumes:
       - ./persistent-data/export:/data/export
@@ -93,7 +93,7 @@ services:
 
   nginx:
     image: nginx:1.21-alpine
-    container_name: cicd-nginx
+    container_name: tds-nginx
     restart: always
     
     # 【终极修复】1. 先清空挂载目录里的旧文件；2. 强制把新文件的所有者改为 www-data(101)；3. 启动 Nginx
