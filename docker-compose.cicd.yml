@@ -18,7 +18,7 @@ services:
       - ./mysql/initsql:/docker-entrypoint-initdb.d
       - ./mysql/conf/my.cnf:/etc/mysql/conf.d/my.cnf
     networks:
-      - cicd-network
+      - traffic-data-system-dev-net
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p12345678"]
       interval: 10s
@@ -35,7 +35,7 @@ services:
     volumes:
       - ./persistent-data/redis:/data
     networks:
-      - cicd-network
+      - traffic-data-system-dev-net
     healthcheck:
       test: ["CMD", "redis-cli", "-p", "6380", "ping"]
       interval: 10s
@@ -53,7 +53,7 @@ services:
     volumes:
       - ./persistent-data/rabbitmq:/var/lib/rabbitmq
     networks:
-      - cicd-network
+      - traffic-data-system-dev-net
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 30s
@@ -89,7 +89,7 @@ services:
       rabbitmq:
         condition: service_healthy
     networks:
-      - cicd-network
+      - traffic-data-system-dev-net
 
   nginx:
     image: nginx:1.21-alpine
@@ -108,8 +108,8 @@ services:
     depends_on:
       - backend
     networks:
-      - cicd-network
+      - traffic-data-system-dev-net
 
 networks:
-  cicd-network:
+  traffic-data-system-dev-net:
     driver: bridge
