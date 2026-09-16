@@ -570,7 +570,11 @@ async function saveToMySQL() {
   if (newCurrentTargetNum.value > 0 && attributions.value.length === 0) {
     finalRemark += ',无事件归因'
   }
-  const finalRecordData = form.record_data.includes('T') ? form.record_data : toStorageDate(form.record_data)
+  const finalRecordData = form.record_data.includes('T')
+      ? form.record_data
+      : form.record_data.includes('/')
+          ? form.record_data
+          : toStorageDate(form.record_data)
   try {
     const json = await insertRecord({
       URL: downloadUrl.value,
