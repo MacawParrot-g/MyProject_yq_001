@@ -1248,7 +1248,7 @@ onUnmounted(() => {
             <tr>
               <th class="th-check"><input type="checkbox" :checked="isAllSelected()" @change="toggleSelectAll" /></th>
               <th>#</th><th>URL</th><th>Bundle ID</th><th>归因</th><th>事件数</th>
-              <th>异常类型</th><th>记录日期</th><th>记录人</th><th>备注</th><th>导出</th><th>操作</th>
+              <th>异常类型</th><th>记录日期</th><th>记录人</th><th>备注</th><th v-if="currentUserRole==='DEVELOPER'">导出</th><th>操作</th>
             </tr>
             </thead>
             <tbody>
@@ -1296,7 +1296,7 @@ onUnmounted(() => {
                   <template v-if="editingRow === index"><input v-model="editBuffer.remark" class="cell-edit-input" /></template>
                   <template v-else>{{ item.remark || '-' }}</template>
                 </td>
-                <td><span :class="item.isOutput === 1 ? 'tag-exported' : 'tag-unexported'">{{ item.isOutput === 1 ? '已导出' : '未导出' }}</span></td>
+                <td v-if="currentUserRole==='DEVELOPER'"><span :class="item.isOutput === 1 ? 'tag-exported' : 'tag-unexported'">{{ item.isOutput === 1 ? '已导出' : '未导出' }}</span></td>
                 <td class="action-cell">
                   <template v-if="editingRow === index">
                     <button class="btn-sm btn-save" @click="saveEditRow(index)" :disabled="savingEdit">{{ savingEdit ? '...' : '✓' }}</button>
