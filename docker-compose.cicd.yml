@@ -47,7 +47,7 @@ services:
     container_name: tds-rabbitmq
     restart: always
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:tds_admin}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
       RABBITMQ_DEFAULT_VHOST: /
     volumes:
