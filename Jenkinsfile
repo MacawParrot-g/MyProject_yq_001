@@ -83,6 +83,9 @@ pipeline {
             steps {
                 echo '>>> 准备部署目录...'
                 sh """
+                    # 【关键修改】从服务器固定位置复制 .env 文件到 Jenkins 工作区
+                    # 这样 docker compose 命令就能读取到密码了
+                    cp -f /opt/traffic-data-system-YQ5287476/.env .
                     mkdir -p ${DEPLOY_DIR}/persistent-data/{mysql,redis,rabbitmq,export,nginx-logs}
                     mkdir -p ${DEPLOY_DIR}/mysql/initsql
                     
