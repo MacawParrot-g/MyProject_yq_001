@@ -79,60 +79,67 @@ pipeline {
             }
         }
 
-                stage('4. 部署 ') {
-            steps {
-                echo '>>> 准备部署目录...'
-                sh """
-                    # 【关键修改】从服务器固定位置复制 .env 文件到 Jenkins 工作区
-                    # 这样 docker compose 命令就能读取到密码了
-                    cp -f /opt/traffic-data-system-YQ5287476/.env .
-                    mkdir -p ${DEPLOY_DIR}/persistent-data/{mysql,redis,rabbitmq,export,nginx-logs}
-                    mkdir -p ${DEPLOY_DIR}/mysql/initsql
-                    
-                    # 只复制配置文件
-                    cp -f docker-compose.cicd.yml ${DEPLOY_DIR}/
-                    cp -f .env ${DEPLOY_DIR}/ 2>/dev/null || true
-                    cp -rf nginx/conf.d ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
-                    cp -f nginx/nginx.conf ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
-                    cp -rf mysql ${DEPLOY_DIR}/ 2>/dev/null || true
-                    cp -rf redis ${DEPLOY_DIR}/ 2>/dev/null || true
-                    cp -f data/* ${DEPLOY_DIR}/data/ 2>/dev/null || true
-                """
-                
-                 echo '>>> 启动/重建所有服务...'
-                dir("${DEPLOY_DIR}") {
-                    sh """
-                        rm -rf persistent-data/nginx-logs/*
-                        
-                        # 【终极杀招】在启动前，强制停止并删除旧的后端容器！
-                        # 不管它是什么状态，直接物理消灭，绝不留情！
-                        docker stop tds-backend || true
-                        docker rm tds-backend || true
-                        
-                        # 此时本地只有最新构建的 myapp-backend:latest
-                        # 启动容器，Docker 将被迫使用最新的镜像！
-                        docker compose -f ${COMPOSE_FILE} up -d
-                    """
-                }
+                stage('4. 部署') {
+    steps {
+        echo '>>> 准备部署目录...'
+        sh """
+            mkdir -p ${DEPLOY_DIR}/persistent-data/{mysql,redis,rabbitmq,export,nginx-logs}
+            mkdir -p ${DEPLOY_DIR}/mysql/initsql
+            
+            cp -f docker-compose.cicd.yml ${DEPLOY_DIR}/
+            cp -rf nginx/conf.d ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
+            cp -f nginx/nginx.conf ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
+            cp -rf mysql ${DEPLOY_DIR}/ 2>/dev/null || true
+            cp -rf redis ${DEPLOY_DIR}/ 2>/dev/null || true
+        """
 
-                                 echo '>>> 将前端配置注入到 Nginx 容器中...'
-                sh """
-                    sleep 3
-                    
-                    # 在宿主机上物理删除旧的前端文件
-                    rm -rf ${DEPLOY_DIR}/nginx/html/dist/*
-                    
-                    # 把最新的前端文件复制进去
-                    docker cp nginx/html/dist/. tds-nginx:/usr/share/nginx/html/dist/
-                    
-                    docker cp nginx/conf.d/. tds-nginx:/etc/nginx/conf.d/
-                    docker exec tds-nginx chown -R 101:101 /usr/share/nginx/html
-                    docker exec tds-nginx nginx -s reload
-                """
-                
-                echo '前后端部署完成！'
-            }
+        echo '>>> 从 Jenkins 凭据生成 .env 文件...'
+        withCredentials([
+            string(credentialsId: 'tds-mysql-root-pwd',  variable: 'MYSQL_ROOT_PWD'),
+            string(credentialsId: 'tds-mysql-user-pwd',  variable: 'MYSQL_USER_PWD'),
+            string(credentialsId: 'tds-rabbitmq-user',   variable: 'RABBITMQ_USER_VAL'),
+            string(credentialsId: 'tds-rabbitmq-pwd',    variable: 'RABBITMQ_PWD')
+        ]) {
+            sh """
+                cat > ${DEPLOY_DIR}/.env << ENVEOF
+MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PWD}
+MYSQL_USER=remote_user
+MYSQL_PASSWORD=${MYSQL_USER_PWD}
+RABBITMQ_USER=${RABBITMQ_USER_VAL}
+RABBITMQ_PASSWORD=${RABBITMQ_PWD}
+ENVEOF
+                chmod 600 ${DEPLOY_DIR}/.env
+            """
         }
+
+        echo '>>> 启动/重建所有服务...'
+        dir("${DEPLOY_DIR}") {
+            sh """
+                rm -rf persistent-data/nginx-logs/*
+                
+                docker stop tds-backend || true
+                docker rm tds-backend || true
+                
+                docker compose -f ${COMPOSE_FILE} up -d
+            """
+        }
+
+        echo '>>> 部署前端文件到 Nginx 挂载目录...'
+        sh """
+            mkdir -p ${DEPLOY_DIR}/nginx/html/dist
+            cp -rf nginx/html/dist/* ${DEPLOY_DIR}/nginx/html/dist/
+
+            mkdir -p ${DEPLOY_DIR}/nginx/conf.d
+            cp -rf nginx/conf.d/* ${DEPLOY_DIR}/nginx/conf.d/
+
+            sleep 3
+            docker exec tds-nginx chown -R 101:101 /usr/share/nginx/html
+            docker exec tds-nginx nginx -s reload
+        """
+
+        echo '>>> 前后端部署完成！'
+    }
+}
     }
 
     post {
