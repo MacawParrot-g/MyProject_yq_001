@@ -122,7 +122,7 @@ pipeline {
                     # 把最新的前端文件复制进去
                     docker cp nginx/html/dist/. tds-nginx:/usr/share/nginx/html/dist/
                     
-                    docker cp nginx/conf.d/. trs-nginx:/etc/nginx/conf.d/
+                    docker cp nginx/conf.d/. tds-nginx:/etc/nginx/conf.d/
                     docker exec tds-nginx chown -R 101:101 /usr/share/nginx/html
                     docker exec tds-nginx nginx -s reload
                 """
