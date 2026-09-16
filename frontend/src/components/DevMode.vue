@@ -480,7 +480,6 @@ const exceptionOptions = ['正常','iOS16闪退','iOS13/14/16均闪退','需要i
 const templateOptions = ['需要iOS17以上','需要登陆后使用，无法注册','卡死在加载页进不去','非英语汉语软件，看不懂','网络检测，无法进入','需要订阅后使用','禁止入库']
 const ATTR_TYPES = ['appflyer', 'adjust', 'singular', 'tenjin']
 const MAX_RETRIES = 5
-
 const downloadUrl = ref('')
 const bundleId = ref('')
 const originalCurrentTargetNum = ref(null)
@@ -905,7 +904,11 @@ async function saveToMySQL() {
   if (newCurrentTargetNum.value > 0 && attributions.value.length === 0) {
     finalRemark += ',无事件归因'
   }
-  const finalRecordData = form.record_data.includes('T') ? form.record_data : toStorageDate(form.record_data)
+  const finalRecordData = form.record_data.includes('T')
+      ? form.record_data
+      : form.record_data.includes('/')
+          ? form.record_data
+          : toStorageDate(form.record_data)
   try {
     const json = await insertRecord({
       URL: downloadUrl.value,
