@@ -75,11 +75,11 @@ services:
     volumes:
       - ./persistent-data/export:/data/export
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+   #   SPRING_PROFILES_ACTIVE: prod
       # MySQL：容器内仍用 3305，通过服务名 'mysql' 访问
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3305/test_data?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: remote_user
-      SPRING_DATASOURCE_PASSWORD: 12345678
+  #    SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3305/test_data?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+   #   SPRING_DATASOURCE_USERNAME: remote_user
+   #   SPRING_DATASOURCE_PASSWORD: 12345678
       # Redis：容器内改为 6380，通过服务名 'redis' 访问
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6380
