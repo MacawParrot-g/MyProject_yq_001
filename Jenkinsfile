@@ -11,13 +11,8 @@ pipeline {
         COMPOSE_FILE = 'docker-compose.cicd.yml'
     }
 
-    tools {
-        // 确保 Jenkins 全局工具配置里有名为 'nodejs' 的 NodeJS 版本
-        nodejs 'nodejs' 
-    }
-
     stages {
-                        stage('1. 拉取代码') {
+        stage('1. 拉取代码') {
             steps {
                 echo '>>> 强制清理 Jenkins 工作区的所有改动...'
                 
@@ -40,7 +35,8 @@ pipeline {
                 '''
             }
         }
-                stage('2. 后端构建与镜像打包') {
+
+        stage('2. 后端构建与镜像打包') {
             steps {
                 dir('backend') {
                     echo '>>> 【强制清理】删除旧的构建产物...'
@@ -62,8 +58,12 @@ pipeline {
             }
         }
 
-                 
+        // ✅ 修复点：将 tools 块移入此 stage 内部
         stage('3. 前端构建 (Vite)') {
+            tools {
+                // 确保 Jenkins 全局工具配置里有名为 'nodejs' 的 NodeJS 版本
+                nodejs 'nodejs' 
+            }
             steps {
                 dir('frontend') {
                     echo '>>> 删除旧的前端构建产物，防止文件堆积...'
@@ -79,67 +79,67 @@ pipeline {
             }
         }
 
-                stage('4. 部署') {
-    steps {
-        echo '>>> 准备部署目录...'
-        sh """
-            mkdir -p ${DEPLOY_DIR}/persistent-data/{mysql,redis,rabbitmq,export,nginx-logs}
-            mkdir -p ${DEPLOY_DIR}/mysql/initsql
-            
-            cp -f docker-compose.cicd.yml ${DEPLOY_DIR}/
-            cp -rf nginx/conf.d ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
-            cp -f nginx/nginx.conf ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
-            cp -rf mysql ${DEPLOY_DIR}/ 2>/dev/null || true
-            cp -rf redis ${DEPLOY_DIR}/ 2>/dev/null || true
-        """
+        stage('4. 部署') {
+            steps {
+                echo '>>> 准备部署目录...'
+                sh """
+                    mkdir -p ${DEPLOY_DIR}/persistent-data/{mysql,redis,rabbitmq,export,nginx-logs}
+                    mkdir -p ${DEPLOY_DIR}/mysql/initsql
+                    
+                    cp -f docker-compose.cicd.yml ${DEPLOY_DIR}/
+                    cp -rf nginx/conf.d ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
+                    cp -f nginx/nginx.conf ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
+                    cp -rf mysql ${DEPLOY_DIR}/ 2>/dev/null || true
+                    cp -rf redis ${DEPLOY_DIR}/ 2>/dev/null || true
+                """
 
-        echo '>>> 从 Jenkins 凭据生成 .env 文件...'
-        withCredentials([
-            string(credentialsId: 'tds-mysql-root-pwd',  variable: 'MYSQL_ROOT_PWD'),
-            string(credentialsId: 'tds-mysql-user-pwd',  variable: 'MYSQL_USER_PWD'),
-            string(credentialsId: 'tds-rabbitmq-user',   variable: 'RABBITMQ_USER_VAL'),
-            string(credentialsId: 'tds-rabbitmq-pwd',    variable: 'RABBITMQ_PWD')
-        ]) {
-            sh """
-                cat > ${DEPLOY_DIR}/.env << ENVEOF
+                echo '>>> 从 Jenkins 凭据生成 .env 文件...'
+                withCredentials([
+                    string(credentialsId: 'tds-mysql-root-pwd',  variable: 'MYSQL_ROOT_PWD'),
+                    string(credentialsId: 'tds-mysql-user-pwd',  variable: 'MYSQL_USER_PWD'),
+                    string(credentialsId: 'tds-rabbitmq-user',   variable: 'RABBITMQ_USER_VAL'),
+                    string(credentialsId: 'tds-rabbitmq-pwd',    variable: 'RABBITMQ_PWD')
+                ]) {
+                    sh """
+                        cat > ${DEPLOY_DIR}/.env << ENVEOF
 MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PWD}
 MYSQL_USER=remote_user
 MYSQL_PASSWORD=${MYSQL_USER_PWD}
 RABBITMQ_USER=${RABBITMQ_USER_VAL}
 RABBITMQ_PASSWORD=${RABBITMQ_PWD}
 ENVEOF
-                chmod 600 ${DEPLOY_DIR}/.env
-            """
+                        chmod 600 ${DEPLOY_DIR}/.env
+                    """
+                }
+
+                echo '>>> 启动/重建所有服务...'
+                dir("${DEPLOY_DIR}") {
+                    sh """
+                        rm -rf persistent-data/nginx-logs/*
+                        
+                        docker stop tds-backend || true
+                        docker rm tds-backend || true
+                        
+                        docker compose -f ${COMPOSE_FILE} up -d
+                    """
+                }
+
+                echo '>>> 部署前端文件到 Nginx 挂载目录...'
+                sh """
+                    mkdir -p ${DEPLOY_DIR}/nginx/html/dist
+                    cp -rf nginx/html/dist/* ${DEPLOY_DIR}/nginx/html/dist/
+
+                    mkdir -p ${DEPLOY_DIR}/nginx/conf.d
+                    cp -rf nginx/conf.d/* ${DEPLOY_DIR}/nginx/conf.d/
+
+                    sleep 3
+                    docker exec tds-nginx chown -R 101:101 /usr/share/nginx/html
+                    docker exec tds-nginx nginx -s reload
+                """
+
+                echo '>>> 前后端部署完成！'
+            }
         }
-
-        echo '>>> 启动/重建所有服务...'
-        dir("${DEPLOY_DIR}") {
-            sh """
-                rm -rf persistent-data/nginx-logs/*
-                
-                docker stop tds-backend || true
-                docker rm tds-backend || true
-                
-                docker compose -f ${COMPOSE_FILE} up -d
-            """
-        }
-
-        echo '>>> 部署前端文件到 Nginx 挂载目录...'
-        sh """
-            mkdir -p ${DEPLOY_DIR}/nginx/html/dist
-            cp -rf nginx/html/dist/* ${DEPLOY_DIR}/nginx/html/dist/
-
-            mkdir -p ${DEPLOY_DIR}/nginx/conf.d
-            cp -rf nginx/conf.d/* ${DEPLOY_DIR}/nginx/conf.d/
-
-            sleep 3
-            docker exec tds-nginx chown -R 101:101 /usr/share/nginx/html
-            docker exec tds-nginx nginx -s reload
-        """
-
-        echo '>>> 前后端部署完成！'
-    }
-}
     }
 
     post {
