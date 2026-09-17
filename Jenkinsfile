@@ -46,7 +46,6 @@ pipeline {
                     sh 'mvn clean package -DskipTests -U'
 
                     echo '>>> 检查 JAR 包是否真的生成成功了！'
-                    // 如果 JAR 包不存在，这里会直接报错并终止流水线，不再往下走！
                     sh "ls -lh target/${JAR_NAME}"
 
                     echo '>>> 强制删除旧镜像...'
@@ -54,6 +53,9 @@ pipeline {
 
                     echo '>>> 强制从头构建...'
                     sh "docker build --no-cache --pull -t ${BACKEND_IMAGE} ."
+
+                    echo '>>> 清理构建产生的悬空镜像...'
+                    sh 'docker image prune -f'
                 }
             }
         }
