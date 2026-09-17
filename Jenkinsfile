@@ -129,7 +129,7 @@ ENVEOF
         echo '>>> 构建新的 Nginx 镜像...'
         sh "ls -lh ${WORKSPACE}/nginx/html/dist/"
         // 指定 Dockerfile 路径
-        sh "docker build --no-cache -f nginx/Dockerfile -t tds-nginx:latest .""
+        sh "docker build --no-cache -f nginx/Dockerfile -t tds-nginx:latest ."
 
         echo '>>> 启动/重建所有服务...'
         dir("${DEPLOY_DIR}") {
