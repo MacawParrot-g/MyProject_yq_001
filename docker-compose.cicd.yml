@@ -88,7 +88,7 @@ services:
     container_name: tds-nginx
     restart: always
     build:
-      dockerfile: nginx/Dockerfile.nginx
+      dockerfile: nginx/Dockerfile
       context: .
     ports:
       - "19203:19203"
