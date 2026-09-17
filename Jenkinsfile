@@ -58,10 +58,8 @@ pipeline {
             }
         }
 
-        // ✅ 修复点：将 tools 块移入此 stage 内部
         stage('3. 前端构建 (Vite)') {
             tools {
-                // 确保 Jenkins 全局工具配置里有名为 'nodejs' 的 NodeJS 版本
                 nodejs 'nodejs' 
             }
             steps {
@@ -72,6 +70,10 @@ pipeline {
                     echo '>>> 开始安装前端依赖并构建...'
                     sh 'npm install'
                     sh 'npm run build'
+                    
+                    echo '>>> 将构建产物复制到 Nginx 挂载目录...'
+                    sh 'mkdir -p ../nginx/html/dist'
+                    sh 'cp -rf dist/* ../nginx/html/dist/'
                     
                     echo '>>> 验证构建产物是否存在...'
                     sh 'ls -lh ../nginx/html/dist/'
