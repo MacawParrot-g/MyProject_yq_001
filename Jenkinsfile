@@ -146,6 +146,21 @@ ENVEOF
                     mkdir -p ${DEPLOY_DIR}/nginx/conf.d
                     cp -rf nginx/conf.d/* ${DEPLOY_DIR}/nginx/conf.d/
 
+                    sh """
+    echo '=== 检查 Jenkins 工作区中的构建产物 ==='
+    ls -lh ${WORKSPACE}/nginx/html/dist/
+    
+    echo '=== 创建目标目录 ==='
+    mkdir -p ${DEPLOY_DIR}/nginx/html/dist
+    
+    echo '=== 复制文件 ==='
+    cp -rf ${WORKSPACE}/nginx/html/dist/* ${DEPLOY_DIR}/nginx/html/dist/
+    
+    echo '=== 验证复制结果 ==='
+    ls -lh ${DEPLOY_DIR}/nginx/html/dist/
+    
+    echo '=== 修复容器内文件权限 ==='
+
                     sleep 3
                     docker exec tds-nginx chown -R 101:101 /usr/share/nginx/html
                     docker exec tds-nginx nginx -s reload
