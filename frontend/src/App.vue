@@ -3,7 +3,7 @@
     <aside class="sidebar" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
       <div class="sidebar-header">
         <div class="sidebar-logo" v-if="!sidebarCollapsed">
-          <span class="logo-text">请选择操作模式</span>
+          <span class="logo-text">欢迎回来，请选择操作模式</span>
         </div>
         <button class="sidebar-toggle" @click="sidebarCollapsed = !sidebarCollapsed">
           {{ sidebarCollapsed ? '☰' : '✕' }}
