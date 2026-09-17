@@ -94,9 +94,6 @@ services:
       context: .
     ports:
       - "19203:19203"
-    volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./persistent-data/nginx-logs:/var/log/nginx
     depends_on:
       - backend
     networks:
