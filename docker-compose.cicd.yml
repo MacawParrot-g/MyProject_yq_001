@@ -97,20 +97,20 @@ services:
     image: nginx:1.21-alpine
     container_name: tds-nginx
     restart: always
-    
-    # 【终极修复】1. 先清空挂载目录里的旧文件；2. 强制把新文件的所有者改为 www-data(101)；3. 启动 Nginx
-    entrypoint: ["/bin/sh", "-c", "chown -R 101:101 /usr/share/nginx/html && exec nginx -g 'daemon off;'"]
-    
-    ports:
-      - "19203:19203"
-    volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./nginx/html:/usr/share/nginx/html
-      - ./persistent-data/nginx-logs:/var/log/nginx
-    depends_on:
-      - backend
-    networks:
-      - traffic-data-system-dev-net
+
+  # 不再需要 entrypoint 里的 chown 了，因为文件已经打包进镜像，权限在构建时就固定了
+  # entrypoint: ["/bin/sh", "-c", "chown -R 101:101 /usr/share/nginx/html && exec nginx -g 'daemon off;'"]
+
+  ports:
+    - "19203:19203"
+  volumes:
+    - ./nginx/conf.d:/etc/nginx/conf.d
+    # - ./nginx/html:/usr/share/nginx/html   <-- 删除这一行，不再挂载静态文件
+    - ./persistent-data/nginx-logs:/var/log/nginx
+  depends_on:
+    - backend
+  networks:
+    - traffic-data-system-dev-net
 
 networks:
   traffic-data-system-dev-net:
