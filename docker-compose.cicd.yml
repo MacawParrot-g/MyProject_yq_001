@@ -64,6 +64,8 @@ services:
     image: myapp-backend:latest
     container_name: tds-backend
     restart: always
+    expose:
+    - "8082"
     ports:
       - "8082:8082"
     env_file:
