@@ -127,10 +127,9 @@ ENVEOF
         }
 
         echo '>>> 构建新的 Nginx 镜像...'
-        // 验证构建产物是否存在
         sh "ls -lh ${WORKSPACE}/nginx/html/dist/"
-        // 构建 Nginx 镜像，将 dist 产物打包进去
-        sh "docker build --no-cache -f Dockerfile.nginx -t tds-nginx:latest ."
+        // 指定 Dockerfile 路径
+        sh "docker build --no-cache -f nginx/Dockerfile -t tds-nginx:latest .""
 
         echo '>>> 启动/重建所有服务...'
         dir("${DEPLOY_DIR}") {
