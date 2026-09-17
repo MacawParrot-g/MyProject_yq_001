@@ -92,80 +92,68 @@ pipeline {
 }
 
         stage('4. 部署') {
-            steps {
-                echo '>>> 准备部署目录...'
-                sh """
-                    mkdir -p ${DEPLOY_DIR}/persistent-data/{mysql,redis,rabbitmq,export,nginx-logs}
-                    mkdir -p ${DEPLOY_DIR}/mysql/initsql
-                    
-                    cp -f docker-compose.cicd.yml ${DEPLOY_DIR}/
-                    cp -rf nginx/conf.d ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
-                    cp -f nginx/nginx.conf ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
-                    cp -rf mysql ${DEPLOY_DIR}/ 2>/dev/null || true
-                    cp -rf redis ${DEPLOY_DIR}/ 2>/dev/null || true
-                """
+    steps {
+        echo '>>> 准备部署目录...'
+        sh """
+            mkdir -p ${DEPLOY_DIR}/persistent-data/{mysql,redis,rabbitmq,export,nginx-logs}
+            mkdir -p ${DEPLOY_DIR}/mysql/initsql
+            
+            cp -f docker-compose.cicd.yml ${DEPLOY_DIR}/
+            # 只复制 Nginx 配置文件，不再复制 html 文件
+            cp -rf nginx/conf.d ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
+            cp -f nginx/nginx.conf ${DEPLOY_DIR}/nginx/ 2>/dev/null || true
+            
+            cp -rf mysql ${DEPLOY_DIR}/ 2>/dev/null || true
+            cp -rf redis ${DEPLOY_DIR}/ 2>/dev/null || true
+        """
 
-                echo '>>> 从 Jenkins 凭据生成 .env 文件...'
-                withCredentials([
-                    string(credentialsId: 'tds-mysql-root-pwd',  variable: 'MYSQL_ROOT_PWD'),
-                    string(credentialsId: 'tds-mysql-user-pwd',  variable: 'MYSQL_USER_PWD'),
-                    string(credentialsId: 'tds-rabbitmq-user',   variable: 'RABBITMQ_USER_VAL'),
-                    string(credentialsId: 'tds-rabbitmq-pwd',    variable: 'RABBITMQ_PWD')
-                ]) {
-                    sh """
-                        cat > ${DEPLOY_DIR}/.env << ENVEOF
+        echo '>>> 从 Jenkins 凭据生成 .env 文件...'
+        withCredentials([
+            string(credentialsId: 'tds-mysql-root-pwd',  variable: 'MYSQL_ROOT_PWD'),
+            string(credentialsId: 'tds-mysql-user-pwd',  variable: 'MYSQL_USER_PWD'),
+            string(credentialsId: 'tds-rabbitmq-user',   variable: 'RABBITMQ_USER_VAL'),
+            string(credentialsId: 'tds-rabbitmq-pwd',    variable: 'RABBITMQ_PWD')
+        ]) {
+            sh """
+                cat > ${DEPLOY_DIR}/.env << ENVEOF
 MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PWD}
 MYSQL_USER=remote_user
 MYSQL_PASSWORD=${MYSQL_USER_PWD}
 RABBITMQ_USER=${RABBITMQ_USER_VAL}
 RABBITMQ_PASSWORD=${RABBITMQ_PWD}
 ENVEOF
-                        chmod 600 ${DEPLOY_DIR}/.env
-                    """
-                }
-
-                echo '>>> 启动/重建所有服务...'
-                dir("${DEPLOY_DIR}") {
-                    sh """
-                        rm -rf persistent-data/nginx-logs/*
-                        
-                        docker stop tds-backend || true
-                        docker rm tds-backend || true
-                        
-                        docker compose -f ${COMPOSE_FILE} up -d
-                    """
-                }
-
-                echo '>>> 部署前端文件到 Nginx 挂载目录...'
-    sh """
-        # 1. 明确地、强制地清空宿主机上的目标目录
-        echo "=== 正在清空宿主机上的旧前端文件 ==="
-        rm -rf ${DEPLOY_DIR}/nginx/html/dist/*
-    
-        # 2. 确保目录存在
-        mkdir -p ${DEPLOY_DIR}/nginx/html/dist
-    
-        # 3. 复制新文件
-        echo "=== 正在复制新构建的前端文件 ==="
-        cp -rf ${WORKSPACE}/nginx/html/dist/* ${DEPLOY_DIR}/nginx/html/dist/
-    
-        # 4. 验证结果
-        echo "=== 验证宿主机目录内容 ==="
-        ls -lh ${DEPLOY_DIR}/nginx/html/dist/
-        ls -lh ${DEPLOY_DIR}/nginx/html/dist/assets/
-    
-        # 5. 重载 Nginx
-        sleep 3
-        docker exec tds-nginx nginx -s reload
-        echo '>>> 清理构建产生的悬空镜像...'
-        sh 'docker image prune -f'
-    """
-         
-
-                echo '>>> 前后端部署完成！'
-            }
+                chmod 600 ${DEPLOY_DIR}/.env
+            """
         }
+
+        echo '>>> 构建新的 Nginx 镜像...'
+        // 验证构建产物是否存在
+        sh "ls -lh ${WORKSPACE}/nginx/html/dist/"
+        // 构建 Nginx 镜像，将 dist 产物打包进去
+        sh "docker build --no-cache -f Dockerfile.nginx -t tds-nginx:latest ."
+
+        echo '>>> 启动/重建所有服务...'
+        dir("${DEPLOY_DIR}") {
+            sh """
+                # 清理旧日志
+                rm -rf persistent-data/nginx-logs/*
+                
+                # 停止并移除旧容器
+                docker stop tds-backend tds-nginx || true
+                docker rm tds-backend tds-nginx || true
+                
+                # 用新镜像重建并启动所有服务
+                docker compose -f ${COMPOSE_FILE} up -d
+            """
+        }
+
+        echo '>>> 清理悬空镜像...'
+        sh 'docker image prune -f'
+
+        echo '>>> 前后端部署完成！'
     }
+}
+    
 
     post {
         always {
