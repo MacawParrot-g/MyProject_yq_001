@@ -54,8 +54,6 @@ pipeline {
                     echo '>>> 强制从头构建...'
                     sh "docker build --no-cache --pull -t ${BACKEND_IMAGE} ."
 
-                    echo '>>> 清理构建产生的悬空镜像...'
-                    sh 'docker image prune -f'
                 }
             }
         }
@@ -159,6 +157,8 @@ ENVEOF
         # 5. 重载 Nginx
         sleep 3
         docker exec tds-nginx nginx -s reload
+        echo '>>> 清理构建产生的悬空镜像...'
+        sh 'docker image prune -f'
     """
          
 
