@@ -144,9 +144,9 @@ ENVEOF
                     cp -rf nginx/html/dist/* ${DEPLOY_DIR}/nginx/html/dist/
 
                     mkdir -p ${DEPLOY_DIR}/nginx/conf.d
-                    cp -rf nginx/conf.d/* ${DEPLOY_DIR}/nginx/conf.d/
-
-                    sh """
+                    cp -rf nginx/conf.d/* ${DEPLOY_DIR}/nginx/conf.d/"""
+                echo '>>> 部署前端文件到 Nginx 挂载目录...'
+sh """
     echo '=== 检查 Jenkins 工作区中的构建产物 ==='
     ls -lh ${WORKSPACE}/nginx/html/dist/
     
@@ -160,11 +160,11 @@ ENVEOF
     ls -lh ${DEPLOY_DIR}/nginx/html/dist/
     
     echo '=== 修复容器内文件权限 ==='
-
-                    sleep 3
-                    docker exec tds-nginx chown -R 101:101 /usr/share/nginx/html
-                    docker exec tds-nginx nginx -s reload
-                """
+    sleep 3
+    docker exec tds-nginx chown -R 101:101 /usr/share/nginx/html
+    docker exec tds-nginx nginx -s reload
+"""
+         
 
                 echo '>>> 前后端部署完成！'
             }
