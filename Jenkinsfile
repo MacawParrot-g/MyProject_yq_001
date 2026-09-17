@@ -61,27 +61,37 @@ pipeline {
         }
 
         stage('3. 前端构建 (Vite)') {
-            tools {
-                nodejs 'nodejs' 
-            }
-            steps {
-                dir('frontend') {
-                    echo '>>> 删除旧的前端构建产物，防止文件堆积...'
-                    sh 'rm -rf ../nginx/html/dist/*'
-                    
-                    echo '>>> 开始安装前端依赖并构建...'
-                    sh 'npm install'
-                    sh 'npm run build'
-                    
-                    echo '>>> 将构建产物复制到 Nginx 挂载目录...'
-                    sh 'mkdir -p ../nginx/html/dist'
-                    sh 'cp -rf dist/* ../nginx/html/dist/'
-                    
-                    echo '>>> 验证构建产物是否存在...'
-                    sh 'ls -lh ../nginx/html/dist/'
-                }
-            }
+    tools {
+        nodejs 'nodejs' 
+    }
+    steps {
+        dir('frontend') {
+            echo '>>> 删除旧的前端构建产物，防止文件堆积...'
+            sh 'rm -rf ../nginx/html/dist/*'
+            
+            echo '>>> 开始安装前端依赖并构建...'
+            sh 'npm install'
+            sh 'npm run build'
+            
+            echo '>>> 检查 dist 目录是否存在...'
+            sh '''
+                if [ ! -d "dist" ]; then
+                    echo "错误：dist 目录不存在！"
+                    ls -la
+                    exit 1
+                fi
+                ls -la dist/
+            '''
+            
+            echo '>>> 将构建产物复制到 Nginx 挂载目录...'
+            sh 'mkdir -p ../nginx/html/dist'
+            sh 'cp -rf dist/* ../nginx/html/dist/'
+            
+            echo '>>> 验证构建产物是否存在...'
+            sh 'ls -lh ../nginx/html/dist/'
         }
+    }
+}
 
         stage('4. 部署') {
             steps {
