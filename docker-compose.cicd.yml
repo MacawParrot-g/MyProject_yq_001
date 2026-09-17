@@ -12,7 +12,7 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       TZ: Asia/Shanghai
     ports:
-      - "13306:3305"    # 宿主机 13306 → 容器内 3305（非默认端口）
+      - "13306:3305"
     volumes:
       - ./persistent-data/mysql:/var/lib/mysql
       - ./mysql/initsql:/docker-entrypoint-initdb.d
@@ -20,7 +20,7 @@ services:
     networks:
       - traffic-data-system-dev-net
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p12345678"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -31,7 +31,7 @@ services:
     restart: always
     command: redis-server --appendonly yes --port 6380
     ports:
-      - "16379:6380"    # 宿主机 16380 → 容器内 6380（非默认端口）
+      - "16379:6380"
     volumes:
       - ./persistent-data/redis:/data
     networks:
@@ -61,26 +61,16 @@ services:
       retries: 5
 
   backend:
-    ports:
-    # 将宿主机端口从 8080 改为 8082
-    - "8082:8082"
     image: myapp-backend:latest
-#    build:
-#      context: ./backend
-#      dockerfile: Dockerfile
     container_name: tds-backend
     restart: always
+    ports:
+      - "8082:8082"
     env_file:
-      - .env 
+      - .env
     volumes:
       - ./persistent-data/export:/data/export
     environment:
-   #   SPRING_PROFILES_ACTIVE: prod
-      # MySQL：容器内仍用 3305，通过服务名 'mysql' 访问
-  #    SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3305/test_data?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-   #   SPRING_DATASOURCE_USERNAME: remote_user
-   #   SPRING_DATASOURCE_PASSWORD: 12345678
-      # Redis：容器内改为 6380，通过服务名 'redis' 访问
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6380
     depends_on:
@@ -94,23 +84,21 @@ services:
       - traffic-data-system-dev-net
 
   nginx:
-    image: nginx:1.21-alpine
+    image: tds-nginx:latest
     container_name: tds-nginx
     restart: always
-
-  # 不再需要 entrypoint 里的 chown 了，因为文件已经打包进镜像，权限在构建时就固定了
-  # entrypoint: ["/bin/sh", "-c", "chown -R 101:101 /usr/share/nginx/html && exec nginx -g 'daemon off;'"]
-
-  ports:
-    - "19203:19203"
-  volumes:
-    - ./nginx/conf.d:/etc/nginx/conf.d
-    # - ./nginx/html:/usr/share/nginx/html   <-- 删除这一行，不再挂载静态文件
-    - ./persistent-data/nginx-logs:/var/log/nginx
-  depends_on:
-    - backend
-  networks:
-    - traffic-data-system-dev-net
+    build:
+      dockerfile: Dockerfile.nginx
+      context: .
+    ports:
+      - "19203:19203"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./persistent-data/nginx-logs:/var/log/nginx
+    depends_on:
+      - backend
+    networks:
+      - traffic-data-system-dev-net
 
 networks:
   traffic-data-system-dev-net:
